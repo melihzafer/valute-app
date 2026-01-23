@@ -2,7 +2,7 @@
 
 import { ipcMain, dialog, shell } from 'electron';
 import * as fs from 'fs';
-import { ProjectSchema, LogSchema } from '../shared/schemas';
+import { ProjectSchema, ProjectSchemaBase, LogSchema } from '../shared/schemas';
 import type { ProjectIPC, LogIPC, InvoiceIPC, IPCResponse, TimerState } from '../shared/types';
 import { getProjects, createProject, updateProject, deleteProject, getLogsByProject, saveLog, deleteLog, getLogsByDateRange, saveInvoice } from './services/ProjectService';
 
@@ -37,7 +37,7 @@ export function setupIpcHandlers() {
 
   ipcMain.handle('create-project', async (_, projectData: Omit<ProjectIPC, 'id' | 'createdAt'>): Promise<IPCResponse<ProjectIPC>> => {
     try {
-      const validatedData = ProjectSchema.omit({ id: true, createdAt: true }).parse(projectData);
+      const validatedData = ProjectSchemaBase.omit({ id: true, createdAt: true }).parse(projectData);
       const newProject = await createProject(validatedData);
       const result: ProjectIPC = {
         ...newProject,
@@ -57,7 +57,7 @@ export function setupIpcHandlers() {
       if (!existingProject) {
         throw new Error('Project not found.');
       }
-      const validatedData = ProjectSchema.omit({ createdAt: true }).partial().parse({ ...existingProject, ...projectData });
+      const validatedData = ProjectSchemaBase.omit({ createdAt: true }).partial().parse({ ...existingProject, ...projectData });
       const updatedProject = await updateProject(id, validatedData);
       const result: ProjectIPC = {
         ...updatedProject,

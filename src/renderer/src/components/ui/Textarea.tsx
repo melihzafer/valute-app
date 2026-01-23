@@ -7,7 +7,7 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {}
 const Textarea: React.FC<TextareaProps> = ({ className, ...props }) => {
   return (
     <textarea
-      className={`mt-1 block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${className}`}
+      className={`mt-1 block w-full p-3 border border-input bg-background text-foreground rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-colors sm:text-sm ${className}`}
       {...props}
     />
   );

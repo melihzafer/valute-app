@@ -134,13 +134,17 @@ const LogEntryForm: React.FC<LogEntryFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">{initialData ? 'Edit Log Entry' : 'Log Time Entry'}</h2>
-      {error && <div className="text-red-500 text-sm">{error}</div>}
+    <form onSubmit={handleSubmit} className="space-y-4 p-6 bg-card rounded-lg shadow-md">
+      <h2 className="text-xl font-semibold mb-4 text-foreground">{initialData ? 'Edit Log Entry' : 'Log Time Entry'}</h2>
+      {error && (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4">
         <div>
-          <label htmlFor="projectSelect" className="block text-sm font-medium text-gray-700">Project</label>
+          <label htmlFor="projectSelect" className="block text-sm font-medium text-foreground mb-2">Project</label>
           <Select
             id="projectSelect"
             value={selectedProjectId}
@@ -157,7 +161,7 @@ const LogEntryForm: React.FC<LogEntryFormProps> = ({
 
         <div className="flex items-center space-x-4">
           <div className="flex-1">
-            <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">Start Time</label>
+            <label htmlFor="startTime" className="block text-sm font-medium text-foreground mb-2">Start Time</label>
             <Input
               id="startTime"
               type="datetime-local"
@@ -167,7 +171,7 @@ const LogEntryForm: React.FC<LogEntryFormProps> = ({
             />
           </div>
           <div className="flex-1">
-            <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">End Time</label>
+            <label htmlFor="endTime" className="block text-sm font-medium text-foreground mb-2">End Time</label>
             <Input
               id="endTime"
               type="datetime-local"
@@ -179,7 +183,7 @@ const LogEntryForm: React.FC<LogEntryFormProps> = ({
         </div>
 
         <div className="col-span-1 md:col-span-2">
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+          <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">Description</label>
           <Textarea
             id="description"
             value={description}
@@ -189,20 +193,26 @@ const LogEntryForm: React.FC<LogEntryFormProps> = ({
           />
         </div>
 
-        <div className="col-span-1 md:col-span-2 text-sm text-gray-600">
+        <div className="col-span-1 md:col-span-2 text-sm text-muted-foreground">
           Current Time Entry Duration: {Math.floor(accumulatedTime / 60)}m {accumulatedTime % 60}s
         </div>
 
         {projectForForm && (
-          <div className="col-span-1 md:col-span-2 text-lg font-medium text-gray-900">
+          <div className="col-span-1 md:col-span-2 text-lg font-medium text-primary">
             Estimated Earnings: {calculateEarnings(accumulatedTime, projectForForm.hourlyRate).toFixed(2)} {projectForForm.currency}
           </div>
         )}
       </div>
 
-      <div className="flex space-x-4 pt-4 border-t border-gray-200">
-        <Button type="submit">{initialData ? 'Update Log' : 'Save Log Entry'}</Button>
-        {onClose && <Button variant="outline" onClick={onClose}>Cancel</Button>}
+      <div className="flex justify-end space-x-3 pt-4 border-t border-border">
+        {onClose && (
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+        )}
+        <Button type="submit">
+          {initialData ? 'Update Log' : 'Save Log Entry'}
+        </Button>
       </div>
     </form>
   );

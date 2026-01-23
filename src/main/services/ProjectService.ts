@@ -12,32 +12,67 @@ import type { Project, Log, Invoice } from '../../shared/types';
 export async function getProjects(): Promise<Project[]> {
   const db = getDb();
   const result = db.select().from(projects).all();
-  return result;
+
+  // Map database 'type' to frontend 'pricingModel'
+  return result.map(project => ({
+    ...project,
+    pricingModel: project.type as any,
+    status: project.archived ? 'archived' : 'active',
+  })) as Project[];
 }
 
 export async function createProject(projectData: Omit<Project, 'id' | 'createdAt'>): Promise<Project> {
   const db = getDb();
 
+  // MAP frontend 'pricingModel' to database 'type' column
   const newProject = {
     id: uuidv4(),
-    ...projectData,
-    createdAt: new Date(),
+    name: projectData.name,
+    clientName: projectData.clientName || null,
+    type: projectData.pricingModel || 'HOURLY', // CRITICAL FIX: Map pricingModel to type
+    currency: projectData.currency || 'USD',
+    hourlyRate: projectData.hourlyRate || 0,
+    fixedPrice: projectData.fixedPrice || null,
+    unitName: projectData.unitName || null,
     archived: projectData.status === 'archived' ? 1 : 0,
+    assetsPath: null, // Optional field
+    createdAt: new Date(),
   };
 
-  db.insert(projects).values(newProject).run();
+  db.insert(projects).values(newProject as any).run();
 
-  return newProject as Project;
+  // Return with frontend-expected field name
+  return {
+    ...newProject,
+    pricingModel: newProject.type as any,
+    status: newProject.archived ? 'archived' : 'active',
+  } as Project;
 }
 
 export async function updateProject(id: string, projectData: Partial<Omit<Project, 'createdAt'>>): Promise<Project> {
   const db = getDb();
 
+  // Map frontend fields to database columns
+  const updateData: any = {
+    name: projectData.name,
+    clientName: projectData.clientName,
+    type: projectData.pricingModel, // Map pricingModel to type
+    currency: projectData.currency,
+    hourlyRate: projectData.hourlyRate,
+    fixedPrice: projectData.fixedPrice,
+    unitName: projectData.unitName,
+  };
+
+  // Remove undefined values
+  Object.keys(updateData).forEach(key => {
+    if (updateData[key] === undefined) {
+      delete updateData[key];
+    }
+  });
+
   // Convert status to archived flag if present
-  const updateData: any = { ...projectData };
-  if (projectData.status) {
+  if (projectData.status !== undefined) {
     updateData.archived = projectData.status === 'archived' ? 1 : 0;
-    delete updateData.status;
   }
 
   db.update(projects)
@@ -51,7 +86,12 @@ export async function updateProject(id: string, projectData: Partial<Omit<Projec
     throw new Error(`Project with id ${id} not found.`);
   }
 
-  return updated as Project;
+  // Map back to frontend format
+  return {
+    ...updated,
+    pricingModel: updated.type as any,
+    status: updated.archived ? 'archived' : 'active',
+  } as Project;
 }
 
 export async function deleteProject(id: string): Promise<void> {

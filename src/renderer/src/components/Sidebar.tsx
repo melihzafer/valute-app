@@ -2,31 +2,34 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { CalendarDays, Package, ReceiptText, Settings } from 'lucide-react'; // Assuming Lucide React for icons
+import { CalendarDays, Package, ReceiptText, Settings } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 
 const Sidebar: React.FC = () => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: CalendarDays },
     { path: '/projects', label: 'Projects', icon: Package },
     { path: '/reports', label: 'Reports', icon: ReceiptText },
-    // Add more navigation items as needed, e.g., Settings
-    // { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
   return (
-    <aside className="w-64 bg-gray-800 text-white min-h-screen flex flex-col">
-      <div className="p-4 text-xl font-bold border-b border-gray-700">
-        Vault
+    <aside className="w-64 bg-card/95 backdrop-blur-sm border-r border-border min-h-screen flex flex-col">
+      <div className="p-6 border-b border-border">
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          Valute
+        </h1>
+        <p className="text-xs text-muted-foreground mt-1">Time Tracking & Invoicing</p>
       </div>
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
-              `flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive
-                ? 'bg-blue-600 text-white'
-                : 'hover:bg-gray-700 hover:text-white'
+              `flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                isActive
+                  ? 'bg-primary/10 text-primary border-l-2 border-primary pl-[10px]'
+                  : 'text-foreground hover:bg-accent/50 hover:text-accent-foreground'
               }`
             }
           >
@@ -35,11 +38,17 @@ const Sidebar: React.FC = () => {
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 border-t border-gray-700">
-        {/* Footer or additional info like settings link */}
+      <div className="p-4 border-t border-border space-y-1">
+        <ThemeToggle />
         <NavLink
           to="/settings"
-          className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 hover:text-white transition-colors"
+          className={({ isActive }) =>
+            `flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              isActive
+                ? 'bg-primary/10 text-primary border-l-2 border-primary pl-[10px]'
+                : 'text-foreground hover:bg-accent/50 hover:text-accent-foreground'
+            }`
+          }
         >
           <Settings className="h-5 w-5 mr-3" />
           Settings

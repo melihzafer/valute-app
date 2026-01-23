@@ -24,17 +24,17 @@ const LogEntry: React.FC<LogEntryProps> = ({ log, projectName, onEdit, onDelete 
   const endTime = log.endTime ? new Date(log.endTime) : null;
 
   return (
-    <tr className="border-b border-gray-200 hover:bg-gray-50">
-      <td className="py-3 px-4 text-sm text-gray-800 truncate" title={projectName}>{projectName}</td>
-      <td className="py-3 px-4 text-sm text-gray-800">{startTime.toLocaleString()}</td>
-      <td className="py-3 px-4 text-sm text-gray-800">{endTime ? endTime.toLocaleString() : '-'}</td>
-      <td className="py-3 px-4 text-sm font-medium text-gray-900">{formatDuration(log.accumulatedTime)}</td>
-      <td className="py-3 px-4 text-sm text-gray-600 truncate" title={log.description}>{log.description || '-'}</td>
+    <tr className="border-b border-border hover:bg-accent/50 transition-colors">
+      <td className="py-3 px-4 text-sm text-foreground truncate" title={projectName}>{projectName}</td>
+      <td className="py-3 px-4 text-sm text-foreground">{startTime.toLocaleString()}</td>
+      <td className="py-3 px-4 text-sm text-foreground">{endTime ? endTime.toLocaleString() : '-'}</td>
+      <td className="py-3 px-4 text-sm font-medium text-foreground">{formatDuration(log.accumulatedTime)}</td>
+      <td className="py-3 px-4 text-sm text-muted-foreground truncate" title={log.description}>{log.description || '-'}</td>
       <td className="py-3 px-4 text-right space-x-2">
         <Button variant="ghost" size="sm" onClick={() => onEdit(log)}>
           <Edit className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => onDelete(log.id)} className="text-red-500 hover:text-red-700">
+        <Button variant="ghost" size="sm" onClick={() => onDelete(log.id)} className="text-destructive hover:bg-destructive/10">
           <Trash className="h-4 w-4" />
         </Button>
       </td>

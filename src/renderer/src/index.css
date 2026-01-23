@@ -1,3 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Mode - Soft, Eye-Friendly Colors */
+    --background: 210 20% 98%;           /* Soft off-white */
+    --foreground: 222 47% 11%;           /* Deep blue-gray text */
+
+    --card: 0 0% 100%;                   /* Pure white cards */
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 247 50% 58%;              /* Softer indigo */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 15% 94%;            /* Very light blue-gray */
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 15% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 15% 94%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 15% 91%;
+    --input: 214 15% 91%;
+    --ring: 247 50% 58%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Dark Mode - Softer, Less Harsh */
+    --background: 222 20% 12%;           /* Softer dark (was 3.9%) */
+    --foreground: 210 20% 96%;
+
+    --card: 222 18% 15%;                 /* Lighter card background */
+    --card-foreground: 210 20% 96%;
+
+    --popover: 222 18% 15%;
+    --popover-foreground: 210 20% 96%;
+
+    --primary: 247 60% 70%;              /* Brighter, more visible */
+    --primary-foreground: 222 20% 12%;
+
+    --secondary: 217 15% 20%;
+    --secondary-foreground: 210 20% 96%;
+
+    --muted: 217 15% 20%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 15% 22%;
+    --accent-foreground: 210 20% 96%;
+
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 210 20% 96%;
+
+    --border: 217 15% 22%;
+    --input: 217 15% 22%;
+    --ring: 247 60% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border transition-colors duration-200;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+  }
+}

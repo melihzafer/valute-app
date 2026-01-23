@@ -5,12 +5,13 @@ import ProjectList from '../components/ProjectList';
 import CreateProjectForm from '../components/CreateProjectForm';
 import LogEntryForm from '../components/LogEntryForm';
 import LogList from '../components/LogList';
-import TimerWidget from '../components/TimerWidget';
 import { useProjectStore } from '../store/useProjectStore';
 import { useTimerStore } from '../store/useTimerStore';
 import type { Project, Log, LogIPC } from '../../../shared/types';
 import { Button } from '../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { calculateEarnings } from '../lib/utils';
+import { Plus, Play, Pause, Square, RotateCcw, Clock } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
   const {
@@ -152,96 +153,122 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="p-8 w-full max-w-7xl mx-auto">
-      <h1 className="text-4xl font-bold text-gray-800 mb-8">Dashboard</h1>
+    <div className="p-8 w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col space-y-2">
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent w-fit">Dashboard</h1>
+        <p className="text-muted-foreground">Manage your projects and track your time.</p>
+      </div>
 
-      {/* Project Selection and Creation */}
-      <section className="mb-8 p-6 bg-white rounded-lg shadow-md">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-gray-700">Projects</h2>
-          <Button onClick={() => setIsProjectFormVisible(true)}>
-            {editingProject ? 'Edit Project' : 'Create New Project'}
-          </Button>
-        </div>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Timer Widget Card - Prominent */}
+        <Card className="col-span-full bg-gradient-to-br from-card/80 to-primary/10 border-primary/20">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div className="space-y-1">
+              <CardTitle className="text-2xl">Active Session</CardTitle>
+              <CardDescription className="text-base">
+                {currentProject ? `Tracking: ${currentProject.name}` : 'Select a project to start'}
+              </CardDescription>
+            </div>
+            {currentProject && (
+              <div className="text-right">
+                <div className="text-2xl font-bold text-primary">
+                  {calculateEarnings(timerState.elapsedSeconds, currentProject.hourlyRate).toFixed(2)} {currentProject.currency}
+                </div>
+                <div className="text-xs text-muted-foreground">Current Earnings</div>
+              </div>
+            )}
+          </CardHeader>
+          <CardContent>
+             <div className="flex flex-col items-center justify-center space-y-6 py-4">
+                <div className="text-5xl font-mono font-bold text-foreground tabular-nums">
+                  {Math.floor(timerState.elapsedSeconds / 3600).toString().padStart(2, '0')}:
+                  {Math.floor((timerState.elapsedSeconds % 3600) / 60).toString().padStart(2, '0')}:
+                  {(timerState.elapsedSeconds % 60).toString().padStart(2, '0')}
+                </div>
+                <div className="flex space-x-4">
+                  {!timerState.isRunning ? (
+                    <Button size="lg" className="w-32" onClick={handleStartTimer} disabled={!currentProject}>
+                      <Play className="mr-2 h-4 w-4" /> Start
+                    </Button>
+                  ) : (
+                    <Button size="lg" variant="secondary" className="w-32" onClick={handlePauseTimer}>
+                      <Pause className="mr-2 h-4 w-4" /> Pause
+                    </Button>
+                  )}
+                  {timerState.isRunning && (
+                    <Button size="lg" variant="destructive" onClick={handleStopTimer}>
+                      <Square className="mr-2 h-4 w-4" /> Stop
+                    </Button>
+                  )}
+                   {!timerState.isRunning && timerState.projectId && (
+                    <Button size="lg" variant="outline" onClick={handleResumeTimer}>
+                      <RotateCcw className="mr-2 h-4 w-4" /> Resume
+                    </Button>
+                  )}
+                </div>
+             </div>
+          </CardContent>
+        </Card>
 
-        {isProjectFormVisible && (
-          <div className="mb-6 p-6 bg-gray-50 rounded-lg shadow-inner">
-            <CreateProjectForm
-              onSubmit={handleProjectFormSubmit}
-              initialData={editingProject}
-              onClose={handleCloseProjectForm}
+        {/* Projects Card */}
+        <Card className="col-span-1 md:col-span-2 lg:col-span-2 h-full">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Projects</CardTitle>
+            <Button size="sm" onClick={() => setIsProjectFormVisible(true)}>
+              <Plus className="mr-2 h-4 w-4" /> New Project
+            </Button>
+          </CardHeader>
+          <CardContent>
+             {isProjectFormVisible && (
+              <div className="mb-6 p-4 border rounded-md bg-accent/20">
+                <CreateProjectForm
+                  onSubmit={handleProjectFormSubmit}
+                  initialData={editingProject}
+                  onClose={handleCloseProjectForm}
+                />
+              </div>
+            )}
+            <ProjectList
+              projects={projects}
+              onSelectProject={handleSelectProject}
+              onEditProject={handleEditProject}
+              onDeleteProject={handleDeleteProject}
             />
-          </div>
-        )}
+          </CardContent>
+        </Card>
 
-        <ProjectList
-          projects={projects}
-          onSelectProject={handleSelectProject}
-          onEditProject={handleEditProject}
-          onDeleteProject={handleDeleteProject}
-        />
-      </section>
-
-      {/* Timer Widget and Controls */}
-      <section className="mb-8 p-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg text-white flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">
-            {currentProject ? `Tracking for: ${currentProject.name}` : 'Select a project to start'}
-          </h2>
-          {currentProject && (
-            <p className="text-lg opacity-90">
-              Rate: {currentProject.hourlyRate} {currentProject.currency}/hr
-            </p>
-          )}
-        </div>
-        <div className="flex flex-col items-center space-y-2">
-          <TimerWidget timerState={timerState} />
-          <div className="flex space-x-4 mt-4">
-            {!timerState.isRunning ? (
-              <Button onClick={handleStartTimer} disabled={!currentProject}>Start Timer</Button>
-            ) : (
-              <Button onClick={handlePauseTimer}>Pause Timer</Button>
+        {/* Recent Logs Card */}
+        <Card className="col-span-1 h-full">
+           <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Recent Logs</CardTitle>
+            <Button variant="ghost" size="icon" onClick={handleLogTime} disabled={!currentProject} title="Log Manual Time">
+               <Clock className="h-4 w-4" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+             {isLogFormVisible && (
+              <div className="mb-4 p-4 border rounded-md bg-accent/20">
+                <LogEntryForm
+                  onSubmitLog={handleSubmitLog}
+                  initialData={editingLog ? {
+                    ...editingLog,
+                    startTime: editingLog.startTime instanceof Date ? editingLog.startTime.toISOString() : String(editingLog.startTime),
+                    endTime: editingLog.endTime ? (editingLog.endTime instanceof Date ? editingLog.endTime.toISOString() : String(editingLog.endTime)) : null,
+                  } : undefined}
+                  projectId={currentProject?.id}
+                  onClose={handleCloseLogForm}
+                />
+              </div>
             )}
-            {timerState.isRunning && (
-              <Button variant="outline" onClick={handleStopTimer}>Stop Timer</Button>
-            )}
-             {!timerState.isRunning && timerState.projectId && (
-              <Button variant="outline" onClick={handleResumeTimer}>Resume Timer</Button>
-            )}
-          </div>
-          {currentProject && timerState.isRunning && (
-             <p className="mt-2 text-sm opacity-80">Current Earnings: {calculateEarnings(timerState.elapsedSeconds, currentProject.hourlyRate).toFixed(2)} {currentProject.currency}</p>
-          )}
-        </div>
-      </section>
-
-      {/* Log Entry Form and List */}
-      <section className="mb-8 p-6 bg-white rounded-lg shadow-md">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-700">Time Logs</h2>
-          <Button onClick={handleLogTime} disabled={!currentProject}>Log Manual Time</Button>
-        </div>
-        {isLogFormVisible && (
-          <div className="mb-6 p-6 bg-gray-50 rounded-lg shadow-inner">
-            <LogEntryForm
-              onSubmitLog={handleSubmitLog}
-              initialData={editingLog ? {
-                ...editingLog,
-                startTime: editingLog.startTime instanceof Date ? editingLog.startTime.toISOString() : String(editingLog.startTime),
-                endTime: editingLog.endTime ? (editingLog.endTime instanceof Date ? editingLog.endTime.toISOString() : String(editingLog.endTime)) : null,
-              } : undefined}
-              projectId={currentProject?.id}
-              onClose={handleCloseLogForm}
+            <LogList
+              logs={logsForProject}
+              projects={projects}
+              onEditLog={handleEditLog}
+              onDeleteLog={handleDeleteLog}
             />
-          </div>
-        )}
-        <LogList
-          logs={logsForProject}
-          projects={projects}
-          onEditLog={handleEditLog}
-          onDeleteLog={handleDeleteLog}
-        />
-      </section>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

@@ -45,15 +45,24 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   addProject: async (projectData) => {
     set({ isLoading: true, error: null });
     try {
+      console.log('🔵 Store: Calling window.api.createProject with:', projectData);
       const response = await window.api.createProject(projectData);
+      console.log('🔵 Store: API response:', response);
+
       if (response.success && response.data) {
         const newProject = { ...response.data, createdAt: new Date(response.data.createdAt) };
+        console.log('✅ Store: Adding project to state:', newProject);
         set(state => ({ projects: [...state.projects, newProject], isLoading: false }));
+        console.log('✅ Store: Project added successfully');
       } else {
+        console.error('❌ Store: API returned error:', response.error);
         set({ error: response.error || 'Failed to add project', isLoading: false });
+        throw new Error(response.error || 'Failed to add project');
       }
     } catch (error: any) {
+      console.error('❌ Store: Exception caught:', error);
       set({ error: error.message || 'An unexpected error occurred', isLoading: false });
+      throw error;
     }
   },
 

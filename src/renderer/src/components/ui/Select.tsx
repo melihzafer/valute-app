@@ -10,12 +10,12 @@ const Select: React.FC<SelectProps> = ({ className, children, ...props }) => {
   return (
     <div className="relative">
       <select
-        className={`block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md appearance-none ${className}`}
+        className={`block w-full pl-3 pr-10 py-2 text-base bg-background text-foreground border border-input focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-colors sm:text-sm rounded-md appearance-none ${className}`}
         {...props}
       >
         {children}
       </select>
-      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
         <svg
           className="h-5 w-5 fill-current"
           viewBox="0 0 20 20"

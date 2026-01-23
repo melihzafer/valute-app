@@ -1,10 +1,16 @@
 // src/shared/types.ts
 
+export type PricingModel = 'HOURLY' | 'FIXED' | 'UNIT_BASED' | 'SUBSCRIPTION';
+
 export interface Project {
   id: string;
   name: string;
-  hourlyRate: number;
+  clientName?: string;
+  pricingModel: PricingModel;
+  hourlyRate: number; // For HOURLY, or price per unit for UNIT_BASED (in cents)
+  fixedPrice?: number; // For FIXED pricing (in cents)
   currency: string;
+  unitName?: string; // For UNIT_BASED: "Page", "Article", "Video", etc.
   status: 'active' | 'archived';
   createdAt: Date;
 }
@@ -13,8 +19,12 @@ export interface Project {
 export interface ProjectIPC {
   id: string;
   name: string;
+  clientName?: string;
+  pricingModel: PricingModel;
   hourlyRate: number;
+  fixedPrice?: number;
   currency: string;
+  unitName?: string;
   status: 'active' | 'archived';
   createdAt: string;
 }
@@ -24,7 +34,8 @@ export interface Log {
   projectId: string;
   startTime: Date;
   endTime: Date | null;
-  accumulatedTime: number; // in seconds
+  accumulatedTime: number; // in seconds (for HOURLY)
+  quantity?: number; // for UNIT_BASED tracking (e.g., 1.5 pages)
   description: string;
 }
 
@@ -35,6 +46,7 @@ export interface LogIPC {
   startTime: string;
   endTime: string | null;
   accumulatedTime: number;
+  quantity?: number;
   description: string;
 }
 

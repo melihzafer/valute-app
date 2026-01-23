@@ -1,7 +1,6 @@
 // src/renderer/src/components/EditProjectForm.tsx
 
 import React, { useState } from 'react';
-import { ProjectSchema } from '../../../shared/schemas';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Select } from './ui/Select';
@@ -21,12 +20,12 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
   onClose,
 }) => {
   const [name, setName] = useState(projectToEdit.name);
-  const [hourlyRate, setHourlyRate] = useState<number>(projectToEdit.hourlyRate);
+  const [hourlyRate, setHourlyRate] = useState<number>(projectToEdit.hourlyRate / 100); // Convert from cents to dollars
   const [currency, setCurrency] = useState<string>(projectToEdit.currency);
   const [status, setStatus] = useState<'active' | 'archived'>(projectToEdit.status);
   const [error, setError] = useState<string | null>(null);
 
-  const currencies = ['USD', 'EUR', 'GBP']; // Example currencies
+  const currencies = ['USD', 'EUR', 'GBP', 'TRY'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,17 +39,22 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
     try {
       const updatedProjectData = {
         name,
-        hourlyRate,
+        pricingModel: projectToEdit.pricingModel,
+        hourlyRate: Math.round(hourlyRate * 100),
+        fixedPrice: projectToEdit.fixedPrice || 0,
+        unitName: projectToEdit.unitName || undefined,
         currency,
-        status,
+        status
       };
-      ProjectSchema.parse(updatedProjectData); // Validate with Zod
 
       await onSubmit(updatedProjectData);
       onClose();
     } catch (err: any) {
-      if (err.errors) {
-        setError(`Validation failed: ${err.errors.map((e: any) => e.message).join(', ')}`);
+      console.error('Edit project error:', err);
+      if (err.errors && Array.isArray(err.errors)) {
+        // Zod validation errors from backend
+        const errorMessages = err.errors.map((e: any) => e.message).join(', ');
+        setError(`Validation failed: ${errorMessages}`);
       } else {
         setError(err.message || 'Failed to update project. Please try again.');
       }
@@ -59,9 +63,15 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
+      {error && (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 animate-in fade-in">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      )}
       <div>
-        <label htmlFor="projectName" className="block text-sm font-medium text-gray-700">Project Name</label>
+        <label htmlFor="projectName" className="block text-sm font-medium text-foreground mb-2">
+          Project Name
+        </label>
         <Input
           id="projectName"
           value={name}
@@ -71,7 +81,9 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
         />
       </div>
       <div>
-        <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-700">Hourly Rate</label>
+        <label htmlFor="hourlyRate" className="block text-sm font-medium text-foreground mb-2">
+          Hourly Rate
+        </label>
         <Input
           id="hourlyRate"
           type="number"
@@ -81,10 +93,14 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
           required
           min="0"
           step="0.01"
+          inputMode="decimal"
+          pattern="[0-9]*[.]?[0-9]*"
         />
       </div>
       <div>
-        <label htmlFor="currency" className="block text-sm font-medium text-gray-700">Currency</label>
+        <label htmlFor="currency" className="block text-sm font-medium text-foreground mb-2">
+          Currency
+        </label>
         <Select
           id="currency"
           value={currency}
@@ -96,7 +112,9 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
         </Select>
       </div>
       <div>
-        <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
+        <label htmlFor="status" className="block text-sm font-medium text-foreground mb-2">
+          Status
+        </label>
         <Select
           id="status"
           value={status}
@@ -106,9 +124,13 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
           <option value="archived">Archived</option>
         </Select>
       </div>
-      <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
-        <Button type="submit">Update Project</Button>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
+      <div className="flex justify-end space-x-3 pt-4 border-t border-border">
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit">
+          Update Project
+        </Button>
       </div>
     </form>
   );
@@ -122,6 +144,11 @@ export const EditProjectModal: React.FC<{ project: Project } & Pick<EditProjectF
     setIsOpen(false);
   };
 
+  const handleSubmit = async (projectData: Omit<Project, 'id' | 'createdAt'>): Promise<void> => {
+    await onSubmit(projectData)
+    setIsOpen(false) // Close modal after successful submit
+  }
+
   return (
     <Dialog
       trigger={
@@ -133,7 +160,7 @@ export const EditProjectModal: React.FC<{ project: Project } & Pick<EditProjectF
       open={isOpen}
       onOpenChange={setIsOpen}
     >
-      <EditProjectForm projectToEdit={project} onSubmit={onSubmit} onClose={handleClose} />
+      <EditProjectForm projectToEdit={project} onSubmit={handleSubmit} onClose={handleClose} />
     </Dialog>
   );
 };

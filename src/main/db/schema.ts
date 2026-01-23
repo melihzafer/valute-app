@@ -8,10 +8,11 @@ export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   clientName: text('client_name'),
-  type: text('type').notNull(), // 'hourly', 'fixed', 'retainer'
+  type: text('type').notNull(), // 'HOURLY', 'FIXED', 'UNIT_BASED', 'SUBSCRIPTION'
   currency: text('currency').default('USD'),
-  hourlyRate: integer('hourly_rate'), // Cents (e.g. $50.00 -> 5000)
+  hourlyRate: integer('hourly_rate'), // Cents (e.g. $50.00 -> 5000) or Price per Unit for UNIT_BASED
   fixedPrice: integer('fixed_price'), // Cents for fixed-price projects
+  unitName: text('unit_name'), // For UNIT_BASED: 'Page', 'Article', 'Video', etc.
   archived: integer('archived', { mode: 'boolean' }).default(false),
   assetsPath: text('assets_path'), // Local folder path for project files
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),

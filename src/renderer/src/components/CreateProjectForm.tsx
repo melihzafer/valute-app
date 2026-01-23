@@ -1,19 +1,57 @@
 // src/renderer/src/components/CreateProjectForm.tsx
+// Linear-style Project Creation Form with Visual Card Selection
 
 import React, { useState } from 'react';
+import { Clock, Hash, DollarSign, Repeat } from 'lucide-react';
+import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { useProjectStore } from '../store/useProjectStore';
-import { ProjectSchema } from '../../../shared/schemas';
-import { Input } from './ui/Input'; // Assuming custom UI components for Input
-import { Button } from './ui/Button'; // Assuming custom UI components for Button
-import { Select } from './ui/Select'; // Assuming custom UI components for Select
-import { Dialog } from './ui/Dialog'; // Import new Dialog component
-import { Project } from '../../../shared/types'; // Import Project type
+import type { PricingModel } from '../../../shared/types';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
+import { Select } from './ui/Select';
+import { Dialog } from './ui/Dialog';
+import type { Project } from '../../../shared/types';
 
 interface CreateProjectFormProps {
   onSubmit: (projectData: Omit<Project, 'id' | 'createdAt'>) => Promise<void>;
   initialData?: Project | null;
   onClose: () => void;
 }
+
+interface PricingCard {
+  model: PricingModel;
+  icon: React.ElementType;
+  label: string;
+  description: string;
+}
+
+const pricingCards: PricingCard[] = [
+  {
+    model: 'HOURLY',
+    icon: Clock,
+    label: 'Hourly',
+    description: 'Track time and bill by the hour',
+  },
+  {
+    model: 'UNIT_BASED',
+    icon: Hash,
+    label: 'Unit-Based',
+    description: 'Fixed price per deliverable',
+  },
+  {
+    model: 'FIXED',
+    icon: DollarSign,
+    label: 'Fixed Price',
+    description: 'One-time project total',
+  },
+  {
+    model: 'SUBSCRIPTION',
+    icon: Repeat,
+    label: 'Subscription',
+    description: 'Recurring monthly revenue',
+  },
+];
 
 const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
   initialData,
@@ -22,58 +60,155 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
   const addProject = useProjectStore((state) => state.addProject);
   const updateProject = useProjectStore((state) => state.updateProject);
 
+  // Form State
   const [name, setName] = useState(initialData?.name || '');
-  const [hourlyRate, setHourlyRate] = useState<number>(initialData?.hourlyRate || 0);
+  const [clientName, setClientName] = useState(initialData?.clientName || '');
+  const [pricingModel, setPricingModel] = useState<PricingModel>(
+    initialData?.pricingModel || 'HOURLY'
+  );
+  const [rate, setRate] = useState<number>(
+    initialData?.hourlyRate ? initialData.hourlyRate / 100 : 0
+  );
+  const [fixedPrice, setFixedPrice] = useState<number>(
+    initialData?.fixedPrice ? initialData.fixedPrice / 100 : 0
+  );
+  const [unitName, setUnitName] = useState(initialData?.unitName || '');
   const [currency, setCurrency] = useState<string>(initialData?.currency || 'USD');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currencies = ['USD', 'EUR', 'GBP']; // Example currencies
+  const currencies = ['USD', 'EUR', 'GBP', 'TRY'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Basic validation before Zod parsing
-    if (!name || hourlyRate <= 0 || !currency) {
-      setError('Please fill in all fields correctly.');
+    console.log('=== FORM SUBMIT STARTED ===');
+    console.log('Name:', name);
+    console.log('Pricing Model:', pricingModel);
+    console.log('Rate:', rate);
+    console.log('Fixed Price:', fixedPrice);
+
+    // Validation
+    if (!name.trim()) {
+      setError('Project name is required.');
+      console.log('VALIDATION FAILED: Name is empty');
       return;
     }
 
+    if (pricingModel === 'UNIT_BASED' && !unitName.trim()) {
+      setError('Unit name is required for unit-based pricing.');
+      console.log('VALIDATION FAILED: Unit name required');
+      return;
+    }
+
+    if (pricingModel === 'FIXED' && fixedPrice <= 0) {
+      setError('Fixed price must be greater than zero.');
+      console.log('VALIDATION FAILED: Fixed price <= 0');
+      return;
+    }
+
+    if ((pricingModel === 'HOURLY' || pricingModel === 'UNIT_BASED') && rate <= 0) {
+      setError('Rate must be greater than zero.');
+      console.log('VALIDATION FAILED: Rate <= 0');
+      return;
+    }
+
+    console.log('Validation passed, submitting...');
+    setIsSubmitting(true);
+
     try {
-      // Prepare data for Zod validation (excluding generated fields)
-      const projectDataToValidate = {
-        name,
-        hourlyRate,
+      // Prepare payload with correct field mapping
+      const projectPayload: any = {
+        name: name.trim(),
+        clientName: clientName.trim() || undefined,
+        pricingModel, // This will be mapped to 'type' in the backend
         currency,
         status: initialData?.status || 'active',
       };
-      ProjectSchema.parse(projectDataToValidate); // Validate using Zod schema
+
+      // Set rates based on pricing model
+      if (pricingModel === 'HOURLY' || pricingModel === 'UNIT_BASED') {
+        projectPayload.hourlyRate = Math.round(rate * 100); // Convert to cents
+        projectPayload.fixedPrice = undefined;
+      } else if (pricingModel === 'FIXED') {
+        projectPayload.fixedPrice = Math.round(fixedPrice * 100); // Convert to cents
+        projectPayload.hourlyRate = 0;
+      } else if (pricingModel === 'SUBSCRIPTION') {
+        projectPayload.hourlyRate = Math.round(rate * 100); // Monthly rate in cents
+        projectPayload.fixedPrice = undefined;
+      }
+
+      // Set unit name for unit-based
+      if (pricingModel === 'UNIT_BASED') {
+        projectPayload.unitName = unitName.trim();
+      } else {
+        projectPayload.unitName = undefined;
+      }
+
+      console.log('Project payload:', JSON.stringify(projectPayload, null, 2));
+      console.log('Calling API...');
 
       if (initialData) {
-        await updateProject(initialData.id, projectDataToValidate);
+        console.log('Updating project:', initialData.id);
+        await updateProject(initialData.id, projectPayload);
       } else {
-        await addProject(projectDataToValidate);
+        console.log('Creating new project...');
+        const result = await addProject(projectPayload);
+        console.log('Create result:', result);
       }
 
-      // Reset form after successful submission
+      console.log('SUCCESS! Project saved.');
+      alert('✅ Project created successfully!');
+
+      // Success - reset and close
       setName('');
-      setHourlyRate(0);
+      setClientName('');
+      setPricingModel('HOURLY');
+      setRate(0);
+      setFixedPrice(0);
+      setUnitName('');
       setCurrency('USD');
-      onClose(); // Close the form/modal
+      onClose();
     } catch (err: any) {
-      if (err.errors) {
-        setError(`Validation failed: ${err.errors.map((e: any) => e.message).join(', ')}`);
-      } else {
-        setError(err.message || 'Failed to create/update project. Please try again.');
-      }
+      console.error('ERROR creating project:', err);
+      const errorMsg = err.message || 'Failed to create/update project. Please try again.';
+      setError(errorMsg);
+      alert('❌ Error: ' + errorMsg);
+    } finally {
+      setIsSubmitting(false);
+      console.log('=== FORM SUBMIT ENDED ===');
+    }
+  };
+
+  // Get rate label based on pricing model
+  const getRateLabel = () => {
+    switch (pricingModel) {
+      case 'HOURLY':
+        return 'Hourly Rate';
+      case 'UNIT_BASED':
+        return `Price per ${unitName || 'Unit'}`;
+      case 'SUBSCRIPTION':
+        return 'Monthly Rate';
+      default:
+        return 'Rate';
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
-      <div>
-        <label htmlFor="projectName" className="block text-sm font-medium text-gray-700">Project Name</label>
+    <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-transparent">
+      {/* Error Message */}
+      {error && (
+        <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 animate-in fade-in">
+          <p className="text-sm text-destructive">{error}</p>
+        </div>
+      )}
+
+      {/* Project Name */}
+      <div className="space-y-2">
+        <label htmlFor="projectName" className="block text-sm font-medium text-foreground">
+          Project Name *
+        </label>
         <Input
           id="projectName"
           value={name}
@@ -82,34 +217,207 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
           required
         />
       </div>
-      <div>
-        <label htmlFor="hourlyRate" className="block text-sm font-medium text-gray-700">Hourly Rate</label>
+
+      {/* Client Name */}
+      <div className="space-y-2">
+        <label htmlFor="clientName" className="block text-sm font-medium text-foreground">
+          Client Name
+        </label>
         <Input
-          id="hourlyRate"
-          type="number"
-          value={hourlyRate}
-          onChange={(e) => setHourlyRate(parseFloat(e.target.value) || 0)}
-          placeholder="e.g., 50"
-          required
-          min="0"
-          step="0.01"
+          id="clientName"
+          value={clientName}
+          onChange={(e) => setClientName(e.target.value)}
+          placeholder="e.g., Acme Corp"
         />
       </div>
-      <div>
-        <label htmlFor="currency" className="block text-sm font-medium text-gray-700">Currency</label>
+
+      {/* Pricing Model - Visual Cards */}
+      <div className="space-y-3">
+        <label className="block text-sm font-medium text-foreground">
+          Pricing Model *
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          {pricingCards.map((card) => {
+            const Icon = card.icon;
+            const isSelected = pricingModel === card.model;
+
+            return (
+              <button
+                key={card.model}
+                type="button"
+                onClick={() => setPricingModel(card.model)}
+                className={twMerge(
+                  clsx(
+                    'relative p-4 rounded-lg border transition-all duration-200',
+                    'hover:border-primary/40 focus:outline-none focus:ring-2 focus:ring-ring',
+                    'text-left group',
+                    isSelected
+                      ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
+                      : 'bg-accent/50 border-border'
+                  )
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className={clsx(
+                      'p-2 rounded-md transition-colors',
+                      isSelected ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className={clsx(
+                        'text-sm font-semibold mb-1',
+                        isSelected ? 'text-primary' : 'text-foreground'
+                      )}
+                    >
+                      {card.label}
+                    </div>
+                    <div className="text-xs text-muted-foreground leading-tight">
+                      {card.description}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Selection Indicator */}
+                {isSelected && (
+                  <div className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full animate-in zoom-in" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Dynamic Fields Based on Pricing Model */}
+      {pricingModel === 'UNIT_BASED' && (
+        <div className="space-y-4 p-4 bg-primary/5 border border-primary/20 rounded-md animate-in fade-in slide-in-from-top-2">
+          <div className="space-y-2">
+            <label htmlFor="unitName" className="block text-sm font-medium text-foreground">
+              Unit Name *
+              <span className="ml-2 text-xs text-muted-foreground">(e.g., "Page", "Article", "Video")</span>
+            </label>
+            <Input
+              id="unitName"
+              value={unitName}
+              onChange={(e) => setUnitName(e.target.value)}
+              placeholder="e.g., Page"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="unitRate" className="block text-sm font-medium text-foreground">
+              {getRateLabel()} *
+            </label>
+            <Input
+              id="unitRate"
+              type="number"
+              value={rate}
+              onChange={(e) => setRate(parseFloat(e.target.value) || 0)}
+              placeholder="e.g., 85"
+              required
+              min="0"
+              step="0.01"
+            />
+          </div>
+        </div>
+      )}
+
+      {pricingModel === 'HOURLY' && (
+        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+          <label htmlFor="hourlyRate" className="block text-sm font-medium text-foreground">
+            Hourly Rate *
+          </label>
+          <Input
+            id="hourlyRate"
+            type="number"
+            value={rate}
+            onChange={(e) => setRate(parseFloat(e.target.value) || 0)}
+            placeholder="e.g., 50"
+            required
+            min="0"
+            step="0.01"
+          />
+        </div>
+      )}
+
+      {pricingModel === 'FIXED' && (
+        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+          <label htmlFor="fixedPrice" className="block text-sm font-medium text-foreground">
+            Total Amount *
+          </label>
+          <Input
+            id="fixedPrice"
+            type="number"
+            value={fixedPrice}
+            onChange={(e) => setFixedPrice(parseFloat(e.target.value) || 0)}
+            placeholder="e.g., 5000"
+            required
+            min="0"
+            step="0.01"
+          />
+        </div>
+      )}
+
+      {pricingModel === 'SUBSCRIPTION' && (
+        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+          <label htmlFor="monthlyRate" className="block text-sm font-medium text-foreground">
+            Monthly Rate *
+          </label>
+          <Input
+            id="monthlyRate"
+            type="number"
+            value={rate}
+            onChange={(e) => setRate(parseFloat(e.target.value) || 0)}
+            placeholder="e.g., 400"
+            required
+            min="0"
+            step="0.01"
+          />
+        </div>
+      )}
+
+      {/* Currency */}
+      <div className="space-y-2">
+        <label htmlFor="currency" className="block text-sm font-medium text-foreground">
+          Currency *
+        </label>
         <Select
           id="currency"
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}
         >
-          {currencies.map(curr => (
-            <option key={curr} value={curr}>{curr}</option>
+          {currencies.map((curr) => (
+            <option key={curr} value={curr}>
+              {curr}
+            </option>
           ))}
         </Select>
       </div>
-      <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200">
-        <Button type="submit">{initialData ? 'Update Project' : 'Create Project'}</Button>
-        <Button variant="outline" onClick={onClose}>Cancel</Button>
+
+      {/* Actions */}
+      <div className="flex justify-end gap-3 pt-4 border-t border-border">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          disabled={isSubmitting}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+        >
+          {isSubmitting
+            ? 'Saving...'
+            : initialData
+            ? 'Update Project'
+            : 'Create Project'}
+        </Button>
       </div>
     </form>
   );
@@ -135,4 +443,4 @@ export const CreateProjectModal: React.FC<Omit<CreateProjectFormProps, 'onClose'
   );
 };
 
-export default CreateProjectForm; // Exporting the form itself too
+export default CreateProjectForm;

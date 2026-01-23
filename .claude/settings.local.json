@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(npx drizzle-kit generate:*)",
+      "Bash(npx drizzle-kit up:*)",
+      "Bash(gh pr view:*)",
+      "Bash(npm run typecheck:*)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\melih\\AppData\\Roaming\\valute-app\\data"
+    ]
+  },
+  "outputStyle": "default"
+}
