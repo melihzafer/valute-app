@@ -190,7 +190,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Built with [Electron Vite](https://electron-vite.org/)
-- UI components from [Radix UI](https://www.radix-ui.com/)
 - Icons by [Lucide](https://lucide.dev/)
 
 ---
