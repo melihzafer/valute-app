@@ -1,18 +1,18 @@
 // src/renderer/src/components/InvoiceList.tsx
 
-import React from 'react';
-import { Invoice, Project } from '../../../shared/types';
-import { Button } from './ui/Button';
-import { FileText, Trash, Edit, CheckCircle2, Clock } from 'lucide-react'; // Icons for actions and status
-import { formatCurrency } from '../lib/utils';
+import React from 'react'
+import { Invoice, Project } from '../../../shared/types'
+import { Button } from './ui/Button'
+import { FileText, Trash, Edit, CheckCircle2, Clock } from 'lucide-react' // Icons for actions and status
+import { formatCurrency } from '../lib/utils'
 
 interface InvoiceListProps {
-  invoices: Invoice[];
-  projects: Project[]; // To get project names
-  onViewInvoice: (invoice: Invoice) => void;
-  onEditInvoice: (invoice: Invoice) => void;
-  onDeleteInvoice: (invoiceId: string) => void;
-  onMarkAsPaid: (invoiceId: string) => void;
+  invoices: Invoice[]
+  projects: Project[] // To get project names
+  onViewInvoice: (invoice: Invoice) => void
+  onEditInvoice: (invoice: Invoice) => void
+  onDeleteInvoice: (invoiceId: string) => void
+  onMarkAsPaid: (invoiceId: string) => void
 }
 
 const InvoiceList: React.FC<InvoiceListProps> = ({
@@ -21,20 +21,22 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
   onViewInvoice,
   onEditInvoice,
   onDeleteInvoice,
-  onMarkAsPaid,
+  onMarkAsPaid
 }) => {
   if (!invoices || invoices.length === 0) {
-    return <p className="text-center text-gray-500">No invoices generated yet.</p>;
+    return <p className="text-center text-gray-500">No invoices generated yet.</p>
   }
 
   // Helper to get project name by ID
   const getProjectName = (projectId: string): string => {
-    const project = projects.find(p => p.id === projectId);
-    return project ? project.name : 'Unknown Project';
-  };
+    const project = projects.find((p) => p.id === projectId)
+    return project ? project.name : 'Unknown Project'
+  }
 
   // Sort invoices by issue date, most recent first
-  const sortedInvoices = [...invoices].sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime());
+  const sortedInvoices = [...invoices].sort(
+    (a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime()
+  )
 
   return (
     <div className="overflow-x-auto">
@@ -53,13 +55,26 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
         <tbody>
           {sortedInvoices.map((invoice) => (
             <tr key={invoice.id} className="border-b border-gray-200 hover:bg-gray-50">
-              <td className="py-3 px-4 text-sm text-gray-800 truncate" title={getProjectName(invoice.projectId)}>{getProjectName(invoice.projectId)}</td>
+              <td
+                className="py-3 px-4 text-sm text-gray-800 truncate"
+                title={getProjectName(invoice.projectId)}
+              >
+                {getProjectName(invoice.projectId)}
+              </td>
               <td className="py-3 px-4 text-sm text-gray-800">{invoice.id.substring(0, 6)}...</td>
-              <td className="py-3 px-4 text-sm text-gray-800">{new Date(invoice.issueDate).toLocaleDateString()}</td>
-              <td className="py-3 px-4 text-sm text-gray-800">{new Date(invoice.dueDate).toLocaleDateString()}</td>
-              <td className="py-3 px-4 text-sm font-medium text-gray-900">{formatCurrency(invoice.totalAmount, invoice.currency)}</td>
+              <td className="py-3 px-4 text-sm text-gray-800">
+                {new Date(invoice.issueDate).toLocaleDateString()}
+              </td>
+              <td className="py-3 px-4 text-sm text-gray-800">
+                {new Date(invoice.dueDate).toLocaleDateString()}
+              </td>
+              <td className="py-3 px-4 text-sm font-medium text-gray-900">
+                {formatCurrency(invoice.total, invoice.currency)}
+              </td>
               <td className="py-3 px-4 text-sm ">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${invoice.status === 'paid' ? 'bg-green-100 text-green-800' : invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' : invoice.status === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${invoice.status === 'paid' ? 'bg-green-100 text-green-800' : invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' : invoice.status === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}
+                >
                   {invoice.status === 'paid' && <CheckCircle2 className="h-3 w-3 mr-1" />}
                   {invoice.status === 'overdue' && <Clock className="h-3 w-3 mr-1" />}
                   {invoice.status}
@@ -69,24 +84,36 @@ const InvoiceList: React.FC<InvoiceListProps> = ({
                 <Button variant="ghost" size="sm" onClick={() => onViewInvoice(invoice)}>
                   <FileText className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => onEditInvoice(invoice)} disabled={invoice.status !== 'draft'}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onEditInvoice(invoice)}
+                  disabled={invoice.status !== 'draft'}
+                >
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => onDeleteInvoice(invoice.id)} className="text-red-500 hover:text-red-700" disabled={invoice.status === 'paid' || invoice.status === 'sent'}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDeleteInvoice(invoice.id)}
+                  className="text-red-500 hover:text-red-700"
+                  disabled={invoice.status === 'paid' || invoice.status === 'sent'}
+                >
                   <Trash className="h-4 w-4" />
                 </Button>
-                {invoice.status === 'draft' || invoice.status === 'overdue' && (
-                  <Button variant="outline" size="sm" onClick={() => onMarkAsPaid(invoice.id)}>
-                    Mark as Paid
-                  </Button>
-                )}
+                {invoice.status === 'draft' ||
+                  (invoice.status === 'overdue' && (
+                    <Button variant="outline" size="sm" onClick={() => onMarkAsPaid(invoice.id)}>
+                      Mark as Paid
+                    </Button>
+                  ))}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
-  );
-};
+  )
+}
 
-export default InvoiceList;
+export default InvoiceList

@@ -1,9 +1,9 @@
 // src/renderer/src/components/ui/Select.tsx
 
-import React, { SelectHTMLAttributes } from 'react';
+import React, { SelectHTMLAttributes } from 'react'
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 const Select: React.FC<SelectProps> = ({ className, children, ...props }) => {
@@ -29,8 +29,8 @@ const Select: React.FC<SelectProps> = ({ className, children, ...props }) => {
         </svg>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Select;
-export { Select };
+export default Select
+export { Select }

@@ -1,53 +1,45 @@
 // src/renderer/src/components/CommandMenu.tsx
 // Global Command Menu using cmdk library with Linear-style aesthetic
 
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Command } from 'cmdk';
-import {
-  Home,
-  FolderKanban,
-  BarChart3,
-  Settings,
-  Plus,
-  FileText,
-  Folder,
-} from 'lucide-react';
-import { useUIStore } from '../store/useUIStore';
-import { useProjectStore } from '../store/useProjectStore';
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Command } from 'cmdk'
+import { Home, FolderKanban, BarChart3, Settings, Plus, FileText, Folder } from 'lucide-react'
+import { useUIStore } from '../store/useUIStore'
+import { useProjectStore } from '../store/useProjectStore'
 
 export function CommandMenu() {
-  const navigate = useNavigate();
-  const { isCmdkOpen, setCmdkOpen, toggleCmdk } = useUIStore();
-  const { projects, fetchProjects } = useProjectStore();
+  const navigate = useNavigate()
+  const { isCmdkOpen, setCmdkOpen, toggleCmdk } = useUIStore()
+  const { projects, fetchProjects } = useProjectStore()
 
   // Listen for Ctrl+K / Cmd+K global shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        toggleCmdk();
+        e.preventDefault()
+        toggleCmdk()
       }
-    };
+    }
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [toggleCmdk]);
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [toggleCmdk])
 
   // Load projects when menu opens
   useEffect(() => {
     if (isCmdkOpen) {
-      fetchProjects();
+      fetchProjects()
     }
-  }, [isCmdkOpen, fetchProjects]);
+  }, [isCmdkOpen, fetchProjects])
 
   // Helper function to run command and close menu
   const runCommand = (callback: () => void) => {
-    setCmdkOpen(false);
-    callback();
-  };
+    setCmdkOpen(false)
+    callback()
+  }
 
-  if (!isCmdkOpen) return null;
+  if (!isCmdkOpen) return null
 
   return (
     <div
@@ -117,7 +109,7 @@ export function CommandMenu() {
               <Command.Item
                 onSelect={() =>
                   runCommand(() => {
-                    navigate('/projects');
+                    navigate('/projects')
                     // TODO: Trigger new project modal
                   })
                 }
@@ -130,7 +122,7 @@ export function CommandMenu() {
               <Command.Item
                 onSelect={() =>
                   runCommand(() => {
-                    navigate('/reports');
+                    navigate('/reports')
                     // TODO: Trigger invoice generation
                   })
                 }
@@ -150,9 +142,7 @@ export function CommandMenu() {
                 {projects.map((project) => (
                   <Command.Item
                     key={project.id}
-                    onSelect={() =>
-                      runCommand(() => navigate(`/projects?selected=${project.id}`))
-                    }
+                    onSelect={() => runCommand(() => navigate(`/projects/${project.id}`))}
                     className="flex items-center gap-3 px-3 py-2.5 text-sm text-foreground rounded-md cursor-pointer transition-colors aria-selected:bg-accent aria-selected:text-primary"
                   >
                     <Folder className="w-4 h-4" />
@@ -170,5 +160,5 @@ export function CommandMenu() {
         </Command>
       </div>
     </div>
-  );
+  )
 }

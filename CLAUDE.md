@@ -9,12 +9,14 @@ Valute is a time-tracking and invoicing application built with Electron, React, 
 ## Common Commands
 
 ### Development
+
 ```bash
 npm run dev              # Start development server with hot reload
 npm start                # Preview built application
 ```
 
 ### Build
+
 ```bash
 npm run build            # Type check and build all processes
 npm run build:win        # Build Windows installer
@@ -24,6 +26,7 @@ npm run build:unpack     # Build without packaging (for testing)
 ```
 
 ### Code Quality
+
 ```bash
 npm run typecheck        # Run TypeScript type checking for all processes
 npm run typecheck:node   # Type check main/preload processes only
@@ -33,6 +36,7 @@ npm run format           # Format code with Prettier
 ```
 
 ### Database
+
 ```bash
 npx drizzle-kit generate # Generate SQL migrations from schema changes
 npx drizzle-kit push     # Push schema changes directly to database
@@ -65,6 +69,7 @@ This application follows Electron's multi-process architecture:
 - **Migration Config**: `drizzle.config.ts` configures schema path and migration output
 
 **Key Tables**:
+
 - `projects`: Client projects with billing models (hourly/fixed/retainer)
 - `logs`: Time tracking entries with start/end times and duration
 - `services`: Reusable service catalog with pricing
@@ -115,6 +120,7 @@ This application follows Electron's multi-process architecture:
 ### Monetary Values
 
 Always use integers for money (cents):
+
 - $50.00 → `5000`
 - Convert to display: `(cents / 100).toFixed(2)`
 - Use the currency field to determine symbol/format

@@ -15,10 +15,28 @@ const api = {
   deleteLog: (id: string) => ipcRenderer.invoke('delete-log', id),
 
   // Invoices
-  getLogsForInvoice: (startDate: string, endDate: string) =>
-    ipcRenderer.invoke('get-logs-for-invoice', startDate, endDate),
-  saveInvoice: (data: unknown, pdfBuffer: ArrayBuffer) =>
-    ipcRenderer.invoke('save-invoice', data, pdfBuffer),
+  getLogsForInvoice: (startDate: string, endDate: string, projectId?: string) =>
+    ipcRenderer.invoke('get-logs-for-invoice', startDate, endDate, projectId),
+  getUnbilledLogs: (projectId: string) =>
+    ipcRenderer.invoke('get-unbilled-logs', projectId),
+  getUnbilledExpenses: (projectId: string) =>
+    ipcRenderer.invoke('get-unbilled-expenses', projectId),
+  createInvoice: (data: unknown, pdfBuffer?: ArrayBuffer) =>
+    ipcRenderer.invoke('create-invoice', data, pdfBuffer),
+  getAllInvoices: () =>
+    ipcRenderer.invoke('get-all-invoices'),
+  getInvoicesByProject: (projectId: string) =>
+    ipcRenderer.invoke('get-invoices-by-project', projectId),
+  updateInvoiceStatus: (id: string, status: 'draft' | 'sent' | 'paid' | 'overdue') =>
+    ipcRenderer.invoke('update-invoice-status', id, status),
+  deleteInvoice: (id: string) =>
+    ipcRenderer.invoke('delete-invoice', id),
+
+  // Expenses
+  getExpensesByProject: (projectId: string) =>
+    ipcRenderer.invoke('get-expenses-by-project', projectId),
+  createExpense: (data: unknown) => ipcRenderer.invoke('create-expense', data),
+  deleteExpense: (id: string) => ipcRenderer.invoke('delete-expense', id),
 
   // Timer
   getTimerState: () => ipcRenderer.invoke('get-timer-state'),
@@ -30,9 +48,54 @@ const api = {
   stopTimer: () => ipcRenderer.invoke('stop-timer'),
 
   // Dialogs
-  showSaveDialog: (options: { defaultPath?: string; filters?: Array<{ name: string; extensions: string[] }> }) =>
-    ipcRenderer.invoke('show-save-dialog', options),
+  showSaveDialog: (options: {
+    defaultPath?: string
+    filters?: Array<{ name: string; extensions: string[] }>
+  }) => ipcRenderer.invoke('show-save-dialog', options),
+  showOpenDialog: (options: {
+    properties?: Array<'openFile' | 'openDirectory' | 'multiSelections'>
+    filters?: Array<{ name: string; extensions: string[] }>
+  }) => ipcRenderer.invoke('show-open-dialog', options),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
+
+  // Asset Vault
+  createAsset: (data: { projectId: string; name: string; path: string; type: 'folder' | 'file' | 'link' }) =>
+    ipcRenderer.invoke('create-asset', data),
+  getAssetsByProject: (projectId: string) =>
+    ipcRenderer.invoke('get-assets-by-project', projectId),
+  deleteAsset: (id: string) => ipcRenderer.invoke('delete-asset', id),
+  openAsset: (path: string) => ipcRenderer.invoke('open-asset', path),
+
+  // Project Notes
+  updateProjectNotes: (id: string, notes: string) =>
+    ipcRenderer.invoke('update-project-notes', id, notes),
+  getProjectById: (id: string) => ipcRenderer.invoke('get-project-by-id', id),
+
+  // Floating Timer
+  openFloatingTimer: () => ipcRenderer.invoke('open-floating-timer'),
+  closeFloatingTimer: () => ipcRenderer.invoke('close-floating-timer'),
+  isFloatingTimerOpen: () => ipcRenderer.invoke('is-floating-timer-open'),
+  syncTimerToFloating: (timerState: unknown) => ipcRenderer.send('sync-timer-to-floating', timerState),
+  sendFloatingTimerAction: (action: string) => ipcRenderer.send('floating-timer-action', action),
+  onTimerStateUpdate: (callback: (timerState: unknown) => void) => {
+    ipcRenderer.on('timer-state-update', (_, timerState) => callback(timerState))
+    return () => ipcRenderer.removeAllListeners('timer-state-update')
+  },
+  onFloatingTimerAction: (callback: (action: string) => void) => {
+    ipcRenderer.on('floating-timer-action', (_, action) => callback(action))
+    return () => ipcRenderer.removeAllListeners('floating-timer-action')
+  },
+  onFloatingTimerClosed: (callback: () => void) => {
+    ipcRenderer.on('floating-timer-closed', () => callback())
+    return () => ipcRenderer.removeAllListeners('floating-timer-closed')
+  },
+
+  // Dashboard
+  getDashboardStats: () => ipcRenderer.invoke('get-dashboard-stats'),
+  getRevenueChart: (days: number) => ipcRenderer.invoke('get-revenue-chart', days),
+  getRecentActivity: (limit: number) => ipcRenderer.invoke('get-recent-activity', limit),
+  getMonthlyGoal: () => ipcRenderer.invoke('get-monthly-goal'),
+  setMonthlyGoal: (amountCents: number) => ipcRenderer.invoke('set-monthly-goal', amountCents)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

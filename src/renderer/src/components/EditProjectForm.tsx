@@ -1,39 +1,35 @@
 // src/renderer/src/components/EditProjectForm.tsx
 
-import React, { useState } from 'react';
-import { Input } from './ui/Input';
-import { Button } from './ui/Button';
-import { Select } from './ui/Select';
-import { Dialog } from './ui/Dialog';
-import { Project } from '../../../shared/types';
-import { Edit } from 'lucide-react';
+import React, { useState } from 'react'
+import { Input } from './ui/Input'
+import { Button } from './ui/Button'
+import { Select } from './ui/Select'
+import { Dialog } from './ui/Dialog'
+import { Project } from '../../../shared/types'
+import { Edit } from 'lucide-react'
 
 interface EditProjectFormProps {
-  projectToEdit: Project;
-  onSubmit: (projectData: Omit<Project, 'id' | 'createdAt'>) => Promise<void>;
-  onClose: () => void;
+  projectToEdit: Project
+  onSubmit: (projectData: Omit<Project, 'id' | 'createdAt'>) => Promise<void>
+  onClose: () => void
 }
 
-const EditProjectForm: React.FC<EditProjectFormProps> = ({
-  projectToEdit,
-  onSubmit,
-  onClose,
-}) => {
-  const [name, setName] = useState(projectToEdit.name);
-  const [hourlyRate, setHourlyRate] = useState<number>(projectToEdit.hourlyRate / 100); // Convert from cents to dollars
-  const [currency, setCurrency] = useState<string>(projectToEdit.currency);
-  const [status, setStatus] = useState<'active' | 'archived'>(projectToEdit.status);
-  const [error, setError] = useState<string | null>(null);
+const EditProjectForm: React.FC<EditProjectFormProps> = ({ projectToEdit, onSubmit, onClose }) => {
+  const [name, setName] = useState(projectToEdit.name)
+  const [hourlyRate, setHourlyRate] = useState<number>(projectToEdit.hourlyRate / 100) // Convert from cents to dollars
+  const [currency, setCurrency] = useState<string>(projectToEdit.currency)
+  const [status, setStatus] = useState<'active' | 'archived'>(projectToEdit.status)
+  const [error, setError] = useState<string | null>(null)
 
-  const currencies = ['USD', 'EUR', 'GBP', 'TRY'];
+  const currencies = ['USD', 'EUR', 'GBP', 'TRY']
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault()
+    setError(null)
 
     if (!name || hourlyRate <= 0 || !currency) {
-      setError('Please fill in all fields correctly.');
-      return;
+      setError('Please fill in all fields correctly.')
+      return
     }
 
     try {
@@ -45,21 +41,21 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
         unitName: projectToEdit.unitName || undefined,
         currency,
         status
-      };
+      }
 
-      await onSubmit(updatedProjectData);
-      onClose();
+      await onSubmit(updatedProjectData)
+      onClose()
     } catch (err: any) {
-      console.error('Edit project error:', err);
+      console.error('Edit project error:', err)
       if (err.errors && Array.isArray(err.errors)) {
         // Zod validation errors from backend
-        const errorMessages = err.errors.map((e: any) => e.message).join(', ');
-        setError(`Validation failed: ${errorMessages}`);
+        const errorMessages = err.errors.map((e: any) => e.message).join(', ')
+        setError(`Validation failed: ${errorMessages}`)
       } else {
-        setError(err.message || 'Failed to update project. Please try again.');
+        setError(err.message || 'Failed to update project. Please try again.')
       }
     }
-  };
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -93,21 +89,17 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
           required
           min="0"
           step="0.01"
-          inputMode="decimal"
-          pattern="[0-9]*[.]?[0-9]*"
         />
       </div>
       <div>
         <label htmlFor="currency" className="block text-sm font-medium text-foreground mb-2">
           Currency
         </label>
-        <Select
-          id="currency"
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-        >
-          {currencies.map(curr => (
-            <option key={curr} value={curr}>{curr}</option>
+        <Select id="currency" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+          {currencies.map((curr) => (
+            <option key={curr} value={curr}>
+              {curr}
+            </option>
           ))}
         </Select>
       </div>
@@ -128,21 +120,21 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button type="submit">
-          Update Project
-        </Button>
+        <Button type="submit">Update Project</Button>
       </div>
     </form>
-  );
-};
+  )
+}
 
 // Wrapper component to use with Dialog
-export const EditProjectModal: React.FC<{ project: Project } & Pick<EditProjectFormProps, 'onSubmit'>> = ({ project, onSubmit }) => {
-  const [isOpen, setIsOpen] = useState(false);
+export const EditProjectModal: React.FC<
+  { project: Project } & Pick<EditProjectFormProps, 'onSubmit'>
+> = ({ project, onSubmit }) => {
+  const [isOpen, setIsOpen] = useState(false)
 
   const handleClose = () => {
-    setIsOpen(false);
-  };
+    setIsOpen(false)
+  }
 
   const handleSubmit = async (projectData: Omit<Project, 'id' | 'createdAt'>): Promise<void> => {
     await onSubmit(projectData)
@@ -162,7 +154,7 @@ export const EditProjectModal: React.FC<{ project: Project } & Pick<EditProjectF
     >
       <EditProjectForm projectToEdit={project} onSubmit={handleSubmit} onClose={handleClose} />
     </Dialog>
-  );
-};
+  )
+}
 
-export default EditProjectForm;
+export default EditProjectForm

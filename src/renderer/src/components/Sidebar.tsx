@@ -1,16 +1,16 @@
 // src/renderer/src/components/Sidebar.tsx
 
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { CalendarDays, Package, ReceiptText, Settings } from 'lucide-react';
-import { ThemeToggle } from './ThemeToggle';
+import React from 'react'
+import { NavLink } from 'react-router-dom'
+import { CalendarDays, Package, ReceiptText, Settings } from 'lucide-react'
+import { ThemeToggle } from './ThemeToggle'
 
 const Sidebar: React.FC = () => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: CalendarDays },
     { path: '/projects', label: 'Projects', icon: Package },
-    { path: '/reports', label: 'Reports', icon: ReceiptText },
-  ];
+    { path: '/reports', label: 'Reports', icon: ReceiptText }
+  ]
 
   return (
     <aside className="w-64 bg-card/95 backdrop-blur-sm border-r border-border min-h-screen flex flex-col">
@@ -55,7 +55,7 @@ const Sidebar: React.FC = () => {
         </NavLink>
       </div>
     </aside>
-  );
-};
+  )
+}
 
-export default Sidebar;
+export default Sidebar

@@ -1,7 +1,7 @@
 // src/renderer/src/pages/SettingsPage.tsx
 
-import React from 'react';
-import { Settings, Info, Shield } from 'lucide-react';
+import React from 'react'
+import { Settings, Info, Shield } from 'lucide-react'
 
 const SettingsPage: React.FC = () => {
   return (
@@ -15,8 +15,8 @@ const SettingsPage: React.FC = () => {
           <h2 className="text-xl font-semibold text-gray-700">About Vault</h2>
         </div>
         <p className="text-gray-600 mb-4">
-          Vault is an offline-first, privacy-centric time tracking and invoicing application.
-          All your data stays local on your device - nothing is ever sent to the cloud.
+          Vault is an offline-first, privacy-centric time tracking and invoicing application. All
+          your data stays local on your device - nothing is ever sent to the cloud.
         </p>
         <div className="text-sm text-gray-500">
           <p>Version: 1.0.0</p>
@@ -61,7 +61,7 @@ const SettingsPage: React.FC = () => {
         </p>
       </section>
     </div>
-  );
-};
+  )
+}
 
-export default SettingsPage;
+export default SettingsPage

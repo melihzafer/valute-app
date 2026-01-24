@@ -1,13 +1,18 @@
 // src/renderer/src/pages/ProjectsPage.tsx
 
-import React, { useEffect, useState } from 'react';
-import { useProjectStore } from '../store/useProjectStore';
-import ProjectList from '../components/ProjectList';
-import type { Project } from '../../../shared/types';
-import { CreateProjectModal } from '../components/CreateProjectForm'; // Import the modal wrapper
-import { EditProjectModal } from '../components/EditProjectForm'; // Import the edit modal wrapper
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useProjectStore } from '../store/useProjectStore'
+import { useTimerStore } from '../store/useTimerStore'
+import ProjectList from '../components/ProjectList'
+import type { Project } from '../../../shared/types'
+import { CreateProjectModal } from '../components/CreateProjectForm'
+import EditProjectForm from '../components/EditProjectForm'
+import { Dialog } from '../components/ui/Dialog'
 
 const ProjectsPage: React.FC = () => {
+  const navigate = useNavigate()
+
   const {
     projects,
     currentProject,
@@ -15,41 +20,64 @@ const ProjectsPage: React.FC = () => {
     selectProject,
     deleteProject,
     addProject,
-    updateProject,
-  } = useProjectStore();
+    updateProject
+  } = useProjectStore()
 
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const { startTimer } = useTimerStore()
+
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
+    fetchProjects()
+  }, [fetchProjects])
 
-  const handleSelectProject = (projectId: string) => {
-    selectProject(projectId);
-    // Optionally navigate to dashboard or timer view
-  };
+  const handleSelectProject = async (projectId: string) => {
+    selectProject(projectId)
+
+    // Start timer for this project
+    try {
+      await startTimer(projectId)
+      console.log(`Timer started for project: ${projectId}`)
+      // Navigate to dashboard to show running timer
+      navigate('/')
+    } catch (error) {
+      console.error('Failed to start timer:', error)
+      // Could show a toast notification here
+    }
+  }
 
   const handleDeleteProject = async (projectId: string) => {
-    if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-      await deleteProject(projectId);
+    if (
+      window.confirm('Are you sure you want to delete this project? This action cannot be undone.')
+    ) {
+      await deleteProject(projectId)
       if (currentProject?.id === projectId) {
-        selectProject(''); // Clear selection if the current project is deleted
+        selectProject('')
       }
     }
-  };
+  }
 
   const handleProjectSubmit = async (projectData: Omit<Project, 'id' | 'createdAt'>) => {
     if (editingProject) {
-      await updateProject(editingProject.id, projectData);
+      await updateProject(editingProject.id, projectData)
+      await fetchProjects() // Refresh the list
     } else {
-      await addProject(projectData);
+      await addProject(projectData)
     }
-    setEditingProject(null);
-  };
+    setEditingProject(null)
+    setIsEditModalOpen(false)
+  }
 
   const handleOpenEditModal = (project: Project) => {
-    setEditingProject(project);
-  };
+    setEditingProject(project)
+    setIsEditModalOpen(true)
+  }
+
+  const handleCloseEditModal = () => {
+    setEditingProject(null)
+    setIsEditModalOpen(false)
+  }
 
   return (
     <div className="p-8">
@@ -61,20 +89,29 @@ const ProjectsPage: React.FC = () => {
       <ProjectList
         projects={projects}
         onSelectProject={handleSelectProject}
-        onEditProject={handleOpenEditModal} // Pass the handler to open the edit modal
+        onEditProject={handleOpenEditModal}
         onDeleteProject={handleDeleteProject}
       />
 
-      {/* Edit Project Modal (conditionally rendered based on editingProject state) */}
-      {editingProject && (
-        <EditProjectModal
-          project={editingProject}
-          onSubmit={handleProjectSubmit}
-          // No onClose prop needed here as the modal handles its own closing
-        />
-      )}
+      {/* Edit Project Modal - Controlled by page state */}
+      <Dialog
+        trigger={<span style={{ display: 'none' }} />}
+        title="Edit Project"
+        open={isEditModalOpen}
+        onOpenChange={(open) => {
+          if (!open) handleCloseEditModal()
+        }}
+      >
+        {editingProject && (
+          <EditProjectForm
+            projectToEdit={editingProject}
+            onSubmit={handleProjectSubmit}
+            onClose={handleCloseEditModal}
+          />
+        )}
+      </Dialog>
     </div>
-  );
-};
+  )
+}
 
-export default ProjectsPage;
+export default ProjectsPage

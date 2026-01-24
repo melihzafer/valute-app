@@ -1,12 +1,12 @@
 // src/renderer/src/components/ThemeToggle.tsx
 
-import React from 'react';
-import { Sun, Moon } from 'lucide-react';
-import { useUIStore } from '../store/useUIStore';
-import { Button } from './ui/Button';
+import React from 'react'
+import { Sun, Moon } from 'lucide-react'
+import { useUIStore } from '../store/useUIStore'
+import { Button } from './ui/Button'
 
 export const ThemeToggle: React.FC = () => {
-  const { theme, toggleTheme } = useUIStore();
+  const { theme, toggleTheme } = useUIStore()
 
   return (
     <Button
@@ -28,5 +28,5 @@ export const ThemeToggle: React.FC = () => {
         </>
       )}
     </Button>
-  );
-};
+  )
+}

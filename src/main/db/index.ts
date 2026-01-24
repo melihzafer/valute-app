@@ -1,15 +1,15 @@
 // src/main/db/index.ts
 // Database initialization and connection management
 
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { app } from 'electron';
-import path from 'path';
-import fs from 'fs';
-import * as schema from './schema';
+import Database from 'better-sqlite3'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { app } from 'electron'
+import path from 'path'
+import fs from 'fs'
+import * as schema from './schema'
 
-let db: ReturnType<typeof drizzle> | null = null;
-let sqlite: Database.Database | null = null;
+let db: ReturnType<typeof drizzle> | null = null
+let sqlite: Database.Database | null = null
 
 // SQL to create all tables (from migrations)
 const CREATE_TABLES_SQL = `
@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS "projects" (
   "unit_name" text,
   "archived" integer DEFAULT false,
   "assets_path" text,
+  "notes" text,
   "created_at" integer
 );
 
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS "logs" (
   "id" text PRIMARY KEY NOT NULL,
   "project_id" text NOT NULL,
   "service_id" text,
+  "invoice_id" text,
   "start_time" integer,
   "end_time" integer,
   "duration" integer,
@@ -49,19 +51,22 @@ CREATE TABLE IF NOT EXISTS "logs" (
   "tags" text,
   "created_at" integer,
   FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE cascade,
-  FOREIGN KEY ("service_id") REFERENCES "services"("id") ON UPDATE no action ON DELETE set null
+  FOREIGN KEY ("service_id") REFERENCES "services"("id") ON UPDATE no action ON DELETE set null,
+  FOREIGN KEY ("invoice_id") REFERENCES "invoices"("id") ON UPDATE no action ON DELETE set null
 );
 
 CREATE TABLE IF NOT EXISTS "expenses" (
   "id" text PRIMARY KEY NOT NULL,
   "project_id" text NOT NULL,
+  "invoice_id" text,
   "description" text NOT NULL,
   "amount" integer NOT NULL,
   "is_billable" integer DEFAULT true,
   "markup" integer,
   "date" integer,
   "created_at" integer,
-  FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE cascade
+  FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE cascade,
+  FOREIGN KEY ("invoice_id") REFERENCES "invoices"("id") ON UPDATE no action ON DELETE set null
 );
 
 CREATE TABLE IF NOT EXISTS "invoices" (
@@ -86,7 +91,23 @@ CREATE TABLE IF NOT EXISTS "settings" (
   "value" text,
   "updated_at" integer
 );
-`;
+
+CREATE TABLE IF NOT EXISTS "assets" (
+  "id" text PRIMARY KEY NOT NULL,
+  "project_id" text NOT NULL,
+  "name" text NOT NULL,
+  "path" text NOT NULL,
+  "type" text NOT NULL,
+  "created_at" integer,
+  FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE cascade
+);
+`
+
+// Migration SQL for existing databases (add columns that may be missing)
+const MIGRATIONS_SQL = `
+-- Add notes column to projects if it doesn't exist
+ALTER TABLE "projects" ADD COLUMN "notes" text;
+`
 
 /**
  * Initialize the database connection
@@ -95,45 +116,83 @@ CREATE TABLE IF NOT EXISTS "settings" (
  */
 export function initializeDatabase(): ReturnType<typeof drizzle> {
   if (db) {
-    return db;
+    return db
   }
 
   try {
     // Get user data directory
-    const userDataPath = app.getPath('userData');
-    const dbDir = path.join(userDataPath, 'data');
+    const userDataPath = app.getPath('userData')
+    const dbDir = path.join(userDataPath, 'data')
 
     // Ensure data directory exists
     if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
+      fs.mkdirSync(dbDir, { recursive: true })
     }
 
-    const dbPath = path.join(dbDir, 'valute.db');
+    const dbPath = path.join(dbDir, 'valute.db')
 
-    console.log('Initializing database at:', dbPath);
+    console.log('Initializing database at:', dbPath)
 
     // Create SQLite connection
-    sqlite = new Database(dbPath);
+    sqlite = new Database(dbPath)
 
     // Enable WAL mode for better concurrent access
-    sqlite.pragma('journal_mode = WAL');
+    sqlite.pragma('journal_mode = WAL')
 
     // Enable foreign keys
-    sqlite.pragma('foreign_keys = ON');
+    sqlite.pragma('foreign_keys = ON')
 
     // Create tables if they don't exist
-    console.log('Creating database tables...');
-    sqlite.exec(CREATE_TABLES_SQL);
-    console.log('Database tables ready');
+    console.log('Creating database tables...')
+    sqlite.exec(CREATE_TABLES_SQL)
+    console.log('Database tables ready')
+
+    // Run migrations for existing databases (add missing columns)
+    console.log('Running database migrations...')
+    try {
+      // Check if notes column exists in projects table
+      const projectsInfo = sqlite.prepare("PRAGMA table_info(projects)").all() as { name: string }[]
+      const hasNotesColumn = projectsInfo.some(col => col.name === 'notes')
+
+      if (!hasNotesColumn) {
+        console.log('Adding notes column to projects table...')
+        sqlite.exec('ALTER TABLE "projects" ADD COLUMN "notes" text;')
+        console.log('Notes column added successfully')
+      }
+
+      // Check if invoice_id column exists in logs table
+      const logsInfo = sqlite.prepare("PRAGMA table_info(logs)").all() as { name: string }[]
+      const logsHasInvoiceId = logsInfo.some(col => col.name === 'invoice_id')
+
+      if (!logsHasInvoiceId) {
+        console.log('Adding invoice_id column to logs table...')
+        sqlite.exec('ALTER TABLE "logs" ADD COLUMN "invoice_id" text;')
+        console.log('invoice_id column added to logs successfully')
+      }
+
+      // Check if invoice_id column exists in expenses table
+      const expensesInfo = sqlite.prepare("PRAGMA table_info(expenses)").all() as { name: string }[]
+      const expensesHasInvoiceId = expensesInfo.some(col => col.name === 'invoice_id')
+
+      if (!expensesHasInvoiceId) {
+        console.log('Adding invoice_id column to expenses table...')
+        sqlite.exec('ALTER TABLE "expenses" ADD COLUMN "invoice_id" text;')
+        console.log('invoice_id column added to expenses successfully')
+      }
+    } catch (migrationError) {
+      // Column might already exist, that's fine
+      console.log('Migration check completed:', migrationError)
+    }
+    console.log('Database migrations complete')
 
     // Create Drizzle instance
-    db = drizzle(sqlite, { schema });
+    db = drizzle(sqlite, { schema })
 
-    console.log('Database initialized successfully');
-    return db;
+    console.log('Database initialized successfully')
+    return db
   } catch (error) {
-    console.error('Failed to initialize database:', error);
-    throw error;
+    console.error('Failed to initialize database:', error)
+    throw error
   }
 }
 
@@ -143,9 +202,9 @@ export function initializeDatabase(): ReturnType<typeof drizzle> {
  */
 export function getDb() {
   if (!db) {
-    return initializeDatabase();
+    return initializeDatabase()
   }
-  return db;
+  return db
 }
 
 /**
@@ -154,13 +213,13 @@ export function getDb() {
  */
 export function closeDatabase() {
   if (sqlite) {
-    console.log('Closing database connection...');
-    sqlite.close();
-    db = null;
-    sqlite = null;
-    console.log('Database connection closed');
+    console.log('Closing database connection...')
+    sqlite.close()
+    db = null
+    sqlite = null
+    console.log('Database connection closed')
   }
 }
 
 // Export schema for use in services
-export { schema };
+export { schema }

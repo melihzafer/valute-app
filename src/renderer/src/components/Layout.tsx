@@ -1,26 +1,26 @@
 // src/renderer/src/components/Layout.tsx
 
-import React, { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import TimerWidget from './TimerWidget';
-import { CommandMenu } from './CommandMenu';
-import { useTimerStore } from '../store/useTimerStore';
-import { useProjectStore } from '../store/useProjectStore';
-import { useUIStore } from '../store/useUIStore';
+import React, { useEffect } from 'react'
+import { Outlet } from 'react-router-dom'
+import Sidebar from './Sidebar'
+import TimerWidget from './TimerWidget'
+import { CommandMenu } from './CommandMenu'
+import { useTimerStore } from '../store/useTimerStore'
+import { useProjectStore } from '../store/useProjectStore'
+import { useUIStore } from '../store/useUIStore'
 
 const Layout: React.FC = () => {
-  const { timerState, pauseTimer, resumeTimer, stopTimer } = useTimerStore();
-  const { projects } = useProjectStore();
-  const { theme } = useUIStore();
+  const { timerState, pauseTimer, resumeTimer, stopTimer } = useTimerStore()
+  const { projects } = useProjectStore()
+  const { theme } = useUIStore()
 
   // Get current project's hourly rate
-  const currentProject = projects.find(p => p.id === timerState.projectId);
+  const currentProject = projects.find((p) => p.id === timerState.projectId)
 
   // Apply theme to document root
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+  }, [theme])
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
@@ -40,7 +40,7 @@ const Layout: React.FC = () => {
         onStop={stopTimer}
       />
     </div>
-  );
-};
+  )
+}
 
-export default Layout;
+export default Layout

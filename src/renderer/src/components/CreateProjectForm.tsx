@@ -1,29 +1,29 @@
 // src/renderer/src/components/CreateProjectForm.tsx
 // Linear-style Project Creation Form with Visual Card Selection
 
-import React, { useState } from 'react';
-import { Clock, Hash, DollarSign, Repeat } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-import { useProjectStore } from '../store/useProjectStore';
-import type { PricingModel } from '../../../shared/types';
-import { Input } from './ui/Input';
-import { Button } from './ui/Button';
-import { Select } from './ui/Select';
-import { Dialog } from './ui/Dialog';
-import type { Project } from '../../../shared/types';
+import React, { useState } from 'react'
+import { Clock, Hash, DollarSign, Repeat } from 'lucide-react'
+import { clsx } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+import { useProjectStore } from '../store/useProjectStore'
+import type { PricingModel } from '../../../shared/types'
+import { Input } from './ui/Input'
+import { Button } from './ui/Button'
+import { Select } from './ui/Select'
+import { Dialog } from './ui/Dialog'
+import type { Project } from '../../../shared/types'
 
 interface CreateProjectFormProps {
-  onSubmit: (projectData: Omit<Project, 'id' | 'createdAt'>) => Promise<void>;
-  initialData?: Project | null;
-  onClose: () => void;
+  onSubmit: (projectData: Omit<Project, 'id' | 'createdAt'>) => Promise<void>
+  initialData?: Project | null
+  onClose: () => void
 }
 
 interface PricingCard {
-  model: PricingModel;
-  icon: React.ElementType;
-  label: string;
-  description: string;
+  model: PricingModel
+  icon: React.ElementType
+  label: string
+  description: string
 }
 
 const pricingCards: PricingCard[] = [
@@ -31,91 +31,88 @@ const pricingCards: PricingCard[] = [
     model: 'HOURLY',
     icon: Clock,
     label: 'Hourly',
-    description: 'Track time and bill by the hour',
+    description: 'Track time and bill by the hour'
   },
   {
     model: 'UNIT_BASED',
     icon: Hash,
     label: 'Unit-Based',
-    description: 'Fixed price per deliverable',
+    description: 'Fixed price per deliverable'
   },
   {
     model: 'FIXED',
     icon: DollarSign,
     label: 'Fixed Price',
-    description: 'One-time project total',
+    description: 'One-time project total'
   },
   {
     model: 'SUBSCRIPTION',
     icon: Repeat,
     label: 'Subscription',
-    description: 'Recurring monthly revenue',
-  },
-];
+    description: 'Recurring monthly revenue'
+  }
+]
 
-const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
-  initialData,
-  onClose,
-}) => {
-  const addProject = useProjectStore((state) => state.addProject);
-  const updateProject = useProjectStore((state) => state.updateProject);
+const CreateProjectForm: React.FC<CreateProjectFormProps> = ({ initialData, onClose }) => {
+  const addProject = useProjectStore((state) => state.addProject)
+  const updateProject = useProjectStore((state) => state.updateProject)
 
   // Form State
-  const [name, setName] = useState(initialData?.name || '');
-  const [clientName, setClientName] = useState(initialData?.clientName || '');
+  const [name, setName] = useState(initialData?.name || '')
+  const [clientName, setClientName] = useState(initialData?.clientName || '')
   const [pricingModel, setPricingModel] = useState<PricingModel>(
     initialData?.pricingModel || 'HOURLY'
-  );
+  )
   const [rate, setRate] = useState<number>(
     initialData?.hourlyRate ? initialData.hourlyRate / 100 : 0
-  );
+  )
   const [fixedPrice, setFixedPrice] = useState<number>(
     initialData?.fixedPrice ? initialData.fixedPrice / 100 : 0
-  );
-  const [unitName, setUnitName] = useState(initialData?.unitName || '');
-  const [currency, setCurrency] = useState<string>(initialData?.currency || 'USD');
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  )
+  const [unitName, setUnitName] = useState(initialData?.unitName || '')
+  const [currency, setCurrency] = useState<string>(initialData?.currency || 'USD')
+  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const currencies = ['USD', 'EUR', 'GBP', 'TRY'];
+  const currencies = ['USD', 'EUR', 'GBP', 'TRY']
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault()
+    setError(null)
 
-    console.log('=== FORM SUBMIT STARTED ===');
-    console.log('Name:', name);
-    console.log('Pricing Model:', pricingModel);
-    console.log('Rate:', rate);
-    console.log('Fixed Price:', fixedPrice);
+    console.log('=== FORM SUBMIT STARTED ===')
+    console.log('Name:', name)
+    console.log('Pricing Model:', pricingModel)
+    console.log('Rate:', rate)
+    console.log('Fixed Price:', fixedPrice)
 
     // Validation
     if (!name.trim()) {
-      setError('Project name is required.');
-      console.log('VALIDATION FAILED: Name is empty');
-      return;
+      setError('Project name is required.')
+      console.log('VALIDATION FAILED: Name is empty')
+      return
     }
 
     if (pricingModel === 'UNIT_BASED' && !unitName.trim()) {
-      setError('Unit name is required for unit-based pricing.');
-      console.log('VALIDATION FAILED: Unit name required');
-      return;
+      setError('Unit name is required for unit-based pricing.')
+      console.log('VALIDATION FAILED: Unit name required')
+      return
     }
 
     if (pricingModel === 'FIXED' && fixedPrice <= 0) {
-      setError('Fixed price must be greater than zero.');
-      console.log('VALIDATION FAILED: Fixed price <= 0');
-      return;
+      setError('Fixed price must be greater than zero.')
+      console.log('VALIDATION FAILED: Fixed price <= 0')
+      return
     }
 
     if ((pricingModel === 'HOURLY' || pricingModel === 'UNIT_BASED') && rate <= 0) {
-      setError('Rate must be greater than zero.');
-      console.log('VALIDATION FAILED: Rate <= 0');
-      return;
+      setError('Rate must be greater than zero.')
+      console.log('VALIDATION FAILED: Rate <= 0')
+      return
     }
 
-    console.log('Validation passed, submitting...');
-    setIsSubmitting(true);
+    console.log('Validation passed, submitting...')
+    setIsSubmitting(true)
 
     try {
       // Prepare payload with correct field mapping
@@ -124,76 +121,76 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         clientName: clientName.trim() || undefined,
         pricingModel, // This will be mapped to 'type' in the backend
         currency,
-        status: initialData?.status || 'active',
-      };
+        status: initialData?.status || 'active'
+      }
 
       // Set rates based on pricing model
       if (pricingModel === 'HOURLY' || pricingModel === 'UNIT_BASED') {
-        projectPayload.hourlyRate = Math.round(rate * 100); // Convert to cents
-        projectPayload.fixedPrice = undefined;
+        projectPayload.hourlyRate = Math.round(rate * 100) // Convert to cents
+        projectPayload.fixedPrice = undefined
       } else if (pricingModel === 'FIXED') {
-        projectPayload.fixedPrice = Math.round(fixedPrice * 100); // Convert to cents
-        projectPayload.hourlyRate = 0;
+        projectPayload.fixedPrice = Math.round(fixedPrice * 100) // Convert to cents
+        projectPayload.hourlyRate = 0
       } else if (pricingModel === 'SUBSCRIPTION') {
-        projectPayload.hourlyRate = Math.round(rate * 100); // Monthly rate in cents
-        projectPayload.fixedPrice = undefined;
+        projectPayload.hourlyRate = Math.round(rate * 100) // Monthly rate in cents
+        projectPayload.fixedPrice = undefined
       }
 
       // Set unit name for unit-based
       if (pricingModel === 'UNIT_BASED') {
-        projectPayload.unitName = unitName.trim();
+        projectPayload.unitName = unitName.trim()
       } else {
-        projectPayload.unitName = undefined;
+        projectPayload.unitName = undefined
       }
 
-      console.log('Project payload:', JSON.stringify(projectPayload, null, 2));
-      console.log('Calling API...');
+      console.log('Project payload:', JSON.stringify(projectPayload, null, 2))
+      console.log('Calling API...')
 
       if (initialData) {
-        console.log('Updating project:', initialData.id);
-        await updateProject(initialData.id, projectPayload);
+        console.log('Updating project:', initialData.id)
+        await updateProject(initialData.id, projectPayload)
       } else {
-        console.log('Creating new project...');
-        const result = await addProject(projectPayload);
-        console.log('Create result:', result);
+        console.log('Creating new project...')
+        const result = await addProject(projectPayload)
+        console.log('Create result:', result)
       }
 
-      console.log('SUCCESS! Project saved.');
-      alert('✅ Project created successfully!');
+      console.log('SUCCESS! Project saved.')
+      alert('✅ Project created successfully!')
 
       // Success - reset and close
-      setName('');
-      setClientName('');
-      setPricingModel('HOURLY');
-      setRate(0);
-      setFixedPrice(0);
-      setUnitName('');
-      setCurrency('USD');
-      onClose();
+      setName('')
+      setClientName('')
+      setPricingModel('HOURLY')
+      setRate(0)
+      setFixedPrice(0)
+      setUnitName('')
+      setCurrency('USD')
+      onClose()
     } catch (err: any) {
-      console.error('ERROR creating project:', err);
-      const errorMsg = err.message || 'Failed to create/update project. Please try again.';
-      setError(errorMsg);
-      alert('❌ Error: ' + errorMsg);
+      console.error('ERROR creating project:', err)
+      const errorMsg = err.message || 'Failed to create/update project. Please try again.'
+      setError(errorMsg)
+      alert('❌ Error: ' + errorMsg)
     } finally {
-      setIsSubmitting(false);
-      console.log('=== FORM SUBMIT ENDED ===');
+      setIsSubmitting(false)
+      console.log('=== FORM SUBMIT ENDED ===')
     }
-  };
+  }
 
   // Get rate label based on pricing model
   const getRateLabel = () => {
     switch (pricingModel) {
       case 'HOURLY':
-        return 'Hourly Rate';
+        return 'Hourly Rate'
       case 'UNIT_BASED':
-        return `Price per ${unitName || 'Unit'}`;
+        return `Price per ${unitName || 'Unit'}`
       case 'SUBSCRIPTION':
-        return 'Monthly Rate';
+        return 'Monthly Rate'
       default:
-        return 'Rate';
+        return 'Rate'
     }
-  };
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-transparent">
@@ -233,13 +230,11 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
 
       {/* Pricing Model - Visual Cards */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-foreground">
-          Pricing Model *
-        </label>
+        <label className="block text-sm font-medium text-foreground">Pricing Model *</label>
         <div className="grid grid-cols-2 gap-3">
           {pricingCards.map((card) => {
-            const Icon = card.icon;
-            const isSelected = pricingModel === card.model;
+            const Icon = card.icon
+            const isSelected = pricingModel === card.model
 
             return (
               <button
@@ -286,7 +281,7 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
                   <div className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full animate-in zoom-in" />
                 )}
               </button>
-            );
+            )
           })}
         </div>
       </div>
@@ -297,7 +292,9 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
           <div className="space-y-2">
             <label htmlFor="unitName" className="block text-sm font-medium text-foreground">
               Unit Name *
-              <span className="ml-2 text-xs text-muted-foreground">(e.g., "Page", "Article", "Video")</span>
+              <span className="ml-2 text-xs text-muted-foreground">
+                (e.g., "Page", "Article", "Video")
+              </span>
             </label>
             <Input
               id="unitName"
@@ -385,11 +382,7 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
         <label htmlFor="currency" className="block text-sm font-medium text-foreground">
           Currency *
         </label>
-        <Select
-          id="currency"
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-        >
+        <Select id="currency" value={currency} onChange={(e) => setCurrency(e.target.value)}>
           {currencies.map((curr) => (
             <option key={curr} value={curr}>
               {curr}
@@ -400,36 +393,24 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({
 
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-4 border-t border-border">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onClose}
-          disabled={isSubmitting}
-        >
+        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-        >
-          {isSubmitting
-            ? 'Saving...'
-            : initialData
-            ? 'Update Project'
-            : 'Create Project'}
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : initialData ? 'Update Project' : 'Create Project'}
         </Button>
       </div>
     </form>
-  );
-};
+  )
+}
 
 // Wrapper component to use with Dialog
 export const CreateProjectModal: React.FC<Omit<CreateProjectFormProps, 'onClose'>> = (props) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false)
 
   const handleClose = () => {
-    setIsOpen(false);
-  };
+    setIsOpen(false)
+  }
 
   return (
     <Dialog
@@ -440,7 +421,7 @@ export const CreateProjectModal: React.FC<Omit<CreateProjectFormProps, 'onClose'
     >
       <CreateProjectForm {...props} onClose={handleClose} />
     </Dialog>
-  );
-};
+  )
+}
 
-export default CreateProjectForm;
+export default CreateProjectForm

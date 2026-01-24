@@ -1,276 +1,574 @@
 // src/renderer/src/pages/DashboardPage.tsx
+// Executive Dashboard - High-Performance Business Cockpit
 
-import React, { useEffect, useState } from 'react';
-import ProjectList from '../components/ProjectList';
-import CreateProjectForm from '../components/CreateProjectForm';
-import LogEntryForm from '../components/LogEntryForm';
-import LogList from '../components/LogList';
-import { useProjectStore } from '../store/useProjectStore';
-import { useTimerStore } from '../store/useTimerStore';
-import type { Project, Log, LogIPC } from '../../../shared/types';
-import { Button } from '../components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { calculateEarnings } from '../lib/utils';
-import { Plus, Play, Pause, Square, RotateCcw, Clock } from 'lucide-react';
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+  DollarSign,
+  Briefcase,
+  TrendingUp,
+  Clock,
+  Plus,
+  FileText,
+  BarChart3,
+  Target,
+  Loader2,
+  Play,
+  Pause,
+  Square
+} from 'lucide-react'
+import { Button } from '../components/ui/Button'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Input } from '../components/ui/Input'
+import { Select } from '../components/ui/Select'
+import { Dialog } from '../components/ui/Dialog'
+import LogEntryForm from '../components/LogEntryForm'
+import { formatCurrency } from '../lib/utils'
+import { useTimerStore } from '../store/useTimerStore'
+import { useProjectStore } from '../store/useProjectStore'
+import type { DashboardStats, ChartDataPoint, RecentActivityItem } from '../../../shared/types'
+
+// Format duration in seconds to human readable
+const formatDuration = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`
+  }
+  return `${minutes}m`
+}
+
+// Format date for chart display
+const formatChartDate = (dateStr: string): string => {
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+// KPI Card Component
+interface KPICardProps {
+  title: string
+  value: string
+  subtitle?: string
+  icon: React.ElementType
+  iconColor?: string
+  progress?: number
+  onEditGoal?: () => void
+}
+
+const KPICard: React.FC<KPICardProps> = ({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  iconColor = 'text-primary',
+  progress,
+  onEditGoal
+}) => (
+  <Card className="relative overflow-hidden">
+    <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+      <Icon className={`h-4 w-4 ${iconColor}`} />
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{value}</div>
+      {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+      {progress !== undefined && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className="text-muted-foreground">Monthly Goal</span>
+            <button
+              onClick={onEditGoal}
+              className="text-primary hover:underline text-xs"
+            >
+              Edit
+            </button>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-primary to-blue-400 transition-all duration-500"
+              style={{ width: `${Math.min(100, progress)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">{progress}% of goal</p>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+)
+
+// Recent Activity Item Component
+interface ActivityItemProps {
+  item: RecentActivityItem
+  currency: string
+  onClick: () => void
+}
+
+const ActivityItem: React.FC<ActivityItemProps> = ({ item, currency, onClick }) => (
+  <button
+    onClick={onClick}
+    className="w-full flex items-center justify-between py-3 px-2 hover:bg-accent/50 rounded-lg transition-colors text-left"
+  >
+    <div className="flex items-center gap-3">
+      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+        <Clock className="h-4 w-4 text-primary" />
+      </div>
+      <div>
+        <p className="text-sm font-medium">{item.projectName}</p>
+        <p className="text-xs text-muted-foreground">
+          {formatDuration(item.duration)} • {new Date(item.date).toLocaleDateString()}
+        </p>
+      </div>
+    </div>
+    <span className="text-sm font-medium text-primary">
+      {formatCurrency(item.earnings/100, currency)}
+    </span>
+  </button>
+)
 
 const DashboardPage: React.FC = () => {
-  const {
-    projects,
-    currentProject,
-    fetchProjects,
-    selectProject,
-    deleteProject,
-    addProject,
-    updateProject,
-  } = useProjectStore();
+  const navigate = useNavigate()
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([])
+  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isEditingGoal, setIsEditingGoal] = useState(false)
+  const [goalInput, setGoalInput] = useState('')
+  const [currency] = useState('USD') // Could be fetched from settings
 
-  const { timerState, loadTimerState, startTimer, pauseTimer, resumeTimer, stopTimer } = useTimerStore();
+  // Timer and log entry state
+  const [showLogForm, setShowLogForm] = useState(false)
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('')
+  const { projects, fetchProjects } = useProjectStore()
+  const timerStore = useTimerStore()
 
-  // Fetch projects and timer state on mount
+  // Fetch dashboard data and projects
   useEffect(() => {
-    fetchProjects();
-    loadTimerState();
-  }, [fetchProjects, loadTimerState]);
+    fetchProjects()
+  }, [fetchProjects])
 
-  // State for managing the form visibility (for adding/editing projects and logs)
-  const [isProjectFormVisible, setIsProjectFormVisible] = useState(false);
-  const [isLogFormVisible, setIsLogFormVisible] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [editingLog, setEditingLog] = useState<Log | null>(null);
-  const [logsForProject, setLogsForProject] = useState<Log[]>([]);
+  // Load timer state on mount and set up tick interval for real-time updates
+  useEffect(() => {
+    timerStore.loadTimerState()
+  }, [])
 
-  // Handlers for Project actions
-  const handleSelectProject = (projectId: string) => {
-    selectProject(projectId);
-    // Potentially fetch logs for the selected project here
-    fetchLogsForProject(projectId);
-  };
+  useEffect(() => {
+    if (!timerStore.isRunning) return
 
-  const handleDeleteProject = async (projectId: string) => {
-    if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-      await deleteProject(projectId);
-      if (currentProject?.id === projectId) {
-        selectProject(''); // Clear selection if the current project is deleted
+    // Update elapsed time every second when timer is running
+    const interval = setInterval(() => {
+      timerStore.tick()
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [timerStore.isRunning])
+
+  // Fetch dashboard data
+  useEffect(() => {
+    async function fetchDashboardData(): Promise<void> {
+      setIsLoading(true)
+      try {
+        const [statsRes, chartRes, activityRes] = await Promise.all([
+          window.api.getDashboardStats(),
+          window.api.getRevenueChart(30),
+          window.api.getRecentActivity(5)
+        ])
+
+        if (statsRes.success && statsRes.data) {
+          setStats(statsRes.data)
+          setGoalInput(String((statsRes.data.monthlyGoal / 100).toFixed(0)))
+        }
+        if (chartRes.success && chartRes.data) {
+          setChartData(chartRes.data)
+        }
+        if (activityRes.success && activityRes.data) {
+          setRecentActivity(activityRes.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error)
+      } finally {
+        setIsLoading(false)
       }
     }
-  };
 
-  const handleEditProject = (project: Project) => {
-    setEditingProject(project);
-    setIsProjectFormVisible(true);
-  };
+    fetchDashboardData()
+  }, [])
 
-  const handleProjectFormSubmit = async (projectData: Omit<Project, 'id' | 'createdAt'>) => {
-    if (editingProject) {
-      await updateProject(editingProject.id, projectData);
-      setEditingProject(null);
-    } else {
-      await addProject(projectData);
-    }
-    setIsProjectFormVisible(false);
-  };
+  // Handle saving monthly goal
+  const handleSaveGoal = async (): Promise<void> => {
+    const amountCents = Math.round(parseFloat(goalInput) * 100)
+    if (isNaN(amountCents) || amountCents < 0) return
 
-  const handleCloseProjectForm = () => {
-    setEditingProject(null);
-    setIsProjectFormVisible(false);
-  };
-
-  // Handlers for Log actions
-  const handleLogTime = () => {
-    if (!currentProject) {
-      alert('Please select a project first to log time.');
-      return;
-    }
-    setIsLogFormVisible(true);
-  };
-
-  const fetchLogsForProject = async (projectId: string) => {
     try {
-      const response = await window.api.getLogsByProject(projectId);
-      if (response.success && response.data) {
-        const parsedLogs = response.data.map(log => ({ ...log, startTime: new Date(log.startTime), endTime: log.endTime ? new Date(log.endTime) : null }));
-        setLogsForProject(parsedLogs);
-      } else {
-        console.error("Failed to fetch logs:", response.error);
+      await window.api.setMonthlyGoal(amountCents)
+      // Refresh stats
+      const statsRes = await window.api.getDashboardStats()
+      if (statsRes.success && statsRes.data) {
+        setStats(statsRes.data)
       }
+      setIsEditingGoal(false)
     } catch (error) {
-      console.error("Error fetching logs:", error);
+      console.error('Failed to save monthly goal:', error)
     }
-  };
+  }
 
-  const handleSubmitLog = async (logData: Omit<LogIPC, 'id'>) => {
-    await window.api.saveLog(logData);
-    // Refresh logs after saving
-    if (currentProject?.id) {
-      fetchLogsForProject(currentProject.id);
-    }
-    setIsLogFormVisible(false);
-  };
+  // Navigate to project details
+  const handleActivityClick = (projectId: string): void => {
+    navigate(`/projects/${projectId}`)
+  }
 
-  const handleDeleteLog = async (logId: string) => {
-    if (window.confirm('Are you sure you want to delete this log entry?')) {
-      await window.api.deleteLog(logId);
-      // Refresh logs after deleting
-      if (currentProject?.id) {
-        fetchLogsForProject(currentProject.id);
-      }
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
 
-  const handleEditLog = (log: Log) => {
-    setEditingLog(log);
-    setIsLogFormVisible(true);
-  };
-
-  const handleCloseLogForm = () => {
-    setEditingLog(null);
-    setIsLogFormVisible(false);
-  };
-
-  // Timer controls
-  const handleStartTimer = () => {
-    if (currentProject) {
-      startTimer(currentProject.id, currentProject.name); // Pass project ID and name
-    } else {
-      alert('Please select a project to start the timer.');
-    }
-  };
-
-  const handlePauseTimer = () => {
-    pauseTimer();
-  };
-
-  const handleResumeTimer = () => {
-    resumeTimer();
-  };
-
-  const handleStopTimer = () => {
-    stopTimer();
-    // After stopping, refresh logs if a project was active
-    if (currentProject?.id) {
-      fetchLogsForProject(currentProject.id);
-    }
-  };
+  const currentEarningsCents = stats?.currentMonthEarnings ?? 0
+  const currentUnbilledCents = stats?.unbilledAmount ?? 0
+  const currentExpensesCents = stats?.totalExpensesThisMonth ?? 0
+  const netProfitCents = currentEarningsCents - currentExpensesCents
 
   return (
     <div className="p-8 w-full max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+      {/* Header */}
       <div className="flex flex-col space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent w-fit">Dashboard</h1>
-        <p className="text-muted-foreground">Manage your projects and track your time.</p>
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent w-fit">
+          Dashboard
+        </h1>
+        <p className="text-muted-foreground">Your business at a glance</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Timer Widget Card - Prominent */}
-        <Card className="col-span-full bg-gradient-to-br from-card/80 to-primary/10 border-primary/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div className="space-y-1">
-              <CardTitle className="text-2xl">Active Session</CardTitle>
-              <CardDescription className="text-base">
-                {currentProject ? `Tracking: ${currentProject.name}` : 'Select a project to start'}
-              </CardDescription>
+      {/* KPI Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <KPICard
+          title="Monthly Revenue"
+          value={formatCurrency(currentEarningsCents / 100, currency)}
+          icon={DollarSign}
+          iconColor="text-emerald-500"
+          progress={stats?.goalProgress}
+          onEditGoal={() => setIsEditingGoal(true)}
+        />
+        <KPICard
+          title="Unbilled Work"
+          value={formatCurrency(currentUnbilledCents / 100, currency)}
+          subtitle="Money on the table"
+          icon={TrendingUp}
+          iconColor="text-amber-500"
+        />
+        <KPICard
+          title="Active Projects"
+          value={String(stats?.activeProjectCount ?? 0)}
+          subtitle="Currently in progress"
+          icon={Briefcase}
+          iconColor="text-blue-500"
+        />
+        <KPICard
+          title="Net Profit"
+          value={formatCurrency(netProfitCents / 100, currency)}
+          subtitle="Revenue - Expenses"
+          icon={Target}
+          iconColor={netProfitCents >= 0 ? 'text-emerald-500' : 'text-red-500'}
+        />
+      </div>
+
+      {/* Timer & Quick Log Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-primary" />
+            Time Tracker
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {timerStore.isRunning || timerStore.accumulatedTime > 0 ? (
+            // Show active timer
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Tracking time for</p>
+                  <p className="text-lg font-semibold">{timerStore.currentProjectName || 'Unknown Project'}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold font-mono">
+                    {formatDuration(timerStore.elapsedSeconds + timerStore.accumulatedTime)}
+                  </p>
+                  {(() => {
+                    const project = projects.find(p => p.id === timerStore.projectId)
+                    if (project?.hourlyRate) {
+                      const totalSeconds = timerStore.elapsedSeconds + timerStore.accumulatedTime
+                      const earnings = Math.round((totalSeconds / 3600) * project.hourlyRate)
+                      return (
+                        <p className="text-sm text-emerald-500">
+                          {formatCurrency(earnings/100, currency)}
+                        </p>
+                      )
+                    }
+                    return null
+                  })()}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {timerStore.isRunning ? (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => timerStore.pauseTimer()}
+                  >
+                    <Pause className="h-4 w-4 mr-2" />
+                    Pause
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => timerStore.resumeTimer()}
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Resume
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    await window.api.openFloatingTimer()
+                  }}
+                  title="Pop out timer window"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => timerStore.stopTimer()}
+                >
+                  <Square className="h-4 w-4 mr-2" />
+                  Stop & Save
+                </Button>
+              </div>
             </div>
-            {currentProject && (
-              <div className="text-right">
-                <div className="text-2xl font-bold text-primary">
-                  {calculateEarnings(timerState.elapsedSeconds, currentProject.hourlyRate).toFixed(2)} {currentProject.currency}
-                </div>
-                <div className="text-xs text-muted-foreground">Current Earnings</div>
+          ) : (
+            // Show start timer controls
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Select
+                  value={selectedProjectId}
+                  onChange={(e) => setSelectedProjectId(e.target.value)}
+                  className="flex-1"
+                >
+                  <option value="">Select a project...</option>
+                  {projects.filter(p => p.status === 'active').map(project => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </Select>
+                <Button
+                  onClick={() => selectedProjectId && timerStore.startTimer(selectedProjectId)}
+                  disabled={!selectedProjectId}
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Start Timer
+                </Button>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowLogForm(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Manual Entry
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Manual Log Entry Dialog */}
+      <Dialog
+        trigger={<></>}
+        title="Add Time Entry"
+        open={showLogForm}
+        onOpenChange={setShowLogForm}
+      >
+        <LogEntryForm
+          onSubmitLog={async (logData): Promise<void> => {
+            await window.api.saveLog(logData)
+            setShowLogForm(false)
+            // Refresh dashboard data
+            const [statsRes, activityRes] = await Promise.all([
+              window.api.getDashboardStats(),
+              window.api.getRecentActivity(5)
+            ])
+            if (statsRes.success && statsRes.data) setStats(statsRes.data)
+            if (activityRes.success && activityRes.data) setRecentActivity(activityRes.data)
+          }}
+          onClose={() => setShowLogForm(false)}
+        />
+      </Dialog>
+
+      {/* Goal Edit Modal */}
+      {isEditingGoal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={() => setIsEditingGoal(false)}
+          />
+          <Card className="relative z-10 w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle>Set Monthly Goal</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  value={goalInput}
+                  onChange={(e) => setGoalInput(e.target.value)}
+                  placeholder="5000"
+                  className="flex-1"
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setIsEditingGoal(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveGoal}>Save Goal</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Revenue Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Revenue Trend (Last 30 Days)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] w-full">
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="date"
+                    stroke="#71717a"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={formatChartDate}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    stroke="#71717a"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => `$${(v / 100).toFixed(0)}`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#18181b',
+                      border: '1px solid #3f3f46',
+                      borderRadius: '8px'
+                    }}
+                    labelStyle={{ color: '#a1a1aa' }}
+                    formatter={(value: number) => [formatCurrency(value/100, currency), 'Revenue']}
+                    labelFormatter={(label) => formatChartDate(label)}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="amount"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    fill="url(#colorRevenue)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                No data available. Start tracking time to see your revenue trend.
               </div>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Bottom Row: Recent Activity + Quick Actions */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Recent Activity */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              Recent Activity
+            </CardTitle>
           </CardHeader>
           <CardContent>
-             <div className="flex flex-col items-center justify-center space-y-6 py-4">
-                <div className="text-5xl font-mono font-bold text-foreground tabular-nums">
-                  {Math.floor(timerState.elapsedSeconds / 3600).toString().padStart(2, '0')}:
-                  {Math.floor((timerState.elapsedSeconds % 3600) / 60).toString().padStart(2, '0')}:
-                  {(timerState.elapsedSeconds % 60).toString().padStart(2, '0')}
-                </div>
-                <div className="flex space-x-4">
-                  {!timerState.isRunning ? (
-                    <Button size="lg" className="w-32" onClick={handleStartTimer} disabled={!currentProject}>
-                      <Play className="mr-2 h-4 w-4" /> Start
-                    </Button>
-                  ) : (
-                    <Button size="lg" variant="secondary" className="w-32" onClick={handlePauseTimer}>
-                      <Pause className="mr-2 h-4 w-4" /> Pause
-                    </Button>
-                  )}
-                  {timerState.isRunning && (
-                    <Button size="lg" variant="destructive" onClick={handleStopTimer}>
-                      <Square className="mr-2 h-4 w-4" /> Stop
-                    </Button>
-                  )}
-                   {!timerState.isRunning && timerState.projectId && (
-                    <Button size="lg" variant="outline" onClick={handleResumeTimer}>
-                      <RotateCcw className="mr-2 h-4 w-4" /> Resume
-                    </Button>
-                  )}
-                </div>
-             </div>
+            {recentActivity.length > 0 ? (
+              <div className="space-y-1">
+                {recentActivity.map((item) => (
+                  <ActivityItem
+                    key={item.id}
+                    item={item}
+                    currency={currency}
+                    onClick={() => handleActivityClick(item.projectId)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No recent activity. Start tracking time to see your work here.
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Projects Card */}
-        <Card className="col-span-1 md:col-span-2 lg:col-span-2 h-full">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Projects</CardTitle>
-            <Button size="sm" onClick={() => setIsProjectFormVisible(true)}>
-              <Plus className="mr-2 h-4 w-4" /> New Project
-            </Button>
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent>
-             {isProjectFormVisible && (
-              <div className="mb-6 p-4 border rounded-md bg-accent/20">
-                <CreateProjectForm
-                  onSubmit={handleProjectFormSubmit}
-                  initialData={editingProject}
-                  onClose={handleCloseProjectForm}
-                />
-              </div>
-            )}
-            <ProjectList
-              projects={projects}
-              onSelectProject={handleSelectProject}
-              onEditProject={handleEditProject}
-              onDeleteProject={handleDeleteProject}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Recent Logs Card */}
-        <Card className="col-span-1 h-full">
-           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Logs</CardTitle>
-            <Button variant="ghost" size="icon" onClick={handleLogTime} disabled={!currentProject} title="Log Manual Time">
-               <Clock className="h-4 w-4" />
+          <CardContent className="space-y-3">
+            <Button
+              className="w-full justify-start"
+              variant="outline"
+              onClick={() => navigate('/projects')}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
             </Button>
-          </CardHeader>
-          <CardContent>
-             {isLogFormVisible && (
-              <div className="mb-4 p-4 border rounded-md bg-accent/20">
-                <LogEntryForm
-                  onSubmitLog={handleSubmitLog}
-                  initialData={editingLog ? {
-                    ...editingLog,
-                    startTime: editingLog.startTime instanceof Date ? editingLog.startTime.toISOString() : String(editingLog.startTime),
-                    endTime: editingLog.endTime ? (editingLog.endTime instanceof Date ? editingLog.endTime.toISOString() : String(editingLog.endTime)) : null,
-                  } : undefined}
-                  projectId={currentProject?.id}
-                  onClose={handleCloseLogForm}
-                />
-              </div>
-            )}
-            <LogList
-              logs={logsForProject}
-              projects={projects}
-              onEditLog={handleEditLog}
-              onDeleteLog={handleDeleteLog}
-            />
+            <Button
+              className="w-full justify-start"
+              variant="outline"
+              onClick={() => navigate('/reports')}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Generate Invoice
+            </Button>
+            <Button
+              className="w-full justify-start"
+              variant="outline"
+              onClick={() => navigate('/reports')}
+            >
+              <BarChart3 className="mr-2 h-4 w-4" />
+              View Reports
+            </Button>
           </CardContent>
         </Card>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default DashboardPage;
+export default DashboardPage

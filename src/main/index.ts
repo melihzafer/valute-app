@@ -1,13 +1,16 @@
 // src/main/index.ts
 
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 // import icon from '../../resources/icon.png?asset' // Placeholder for icon
 import { setupIpcHandlers } from './handlers'
 import { initializeDatabase, closeDatabase } from './db/index'
 
+let mainWindow: BrowserWindow | null = null
+let floatingTimerWindow: BrowserWindow | null = null
+
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     show: false,
@@ -24,7 +27,7 @@ function createWindow(): void {
   mainWindow.maximize()
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    mainWindow?.show()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -40,10 +43,107 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+function createFloatingTimerWindow(): BrowserWindow {
+  if (floatingTimerWindow && !floatingTimerWindow.isDestroyed()) {
+    floatingTimerWindow.focus()
+    return floatingTimerWindow
+  }
+
+  floatingTimerWindow = new BrowserWindow({
+    width: 300,
+    height: 180,
+    minWidth: 250,
+    minHeight: 150,
+    maxWidth: 400,
+    maxHeight: 250,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: true,
+    skipTaskbar: true,
+    show: false,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  })
+
+  // Position in bottom-right corner
+  const { screen } = require('electron')
+  const primaryDisplay = screen.getPrimaryDisplay()
+  const { width, height } = primaryDisplay.workAreaSize
+  floatingTimerWindow.setPosition(width - 320, height - 200)
+
+  floatingTimerWindow.on('ready-to-show', () => {
+    floatingTimerWindow?.show()
+  })
+
+  floatingTimerWindow.on('closed', () => {
+    floatingTimerWindow = null
+    // Notify main window that floating timer was closed
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('floating-timer-closed')
+    }
+  })
+
+  // Load the floating timer route
+  if (process.env.ELECTRON_RENDERER_URL) {
+    floatingTimerWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}#/floating-timer`)
+  } else {
+    floatingTimerWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+      hash: '/floating-timer'
+    })
+  }
+
+  return floatingTimerWindow
+}
+
+function setupFloatingTimerHandlers(): void {
+  ipcMain.handle('open-floating-timer', () => {
+    createFloatingTimerWindow()
+    return { success: true }
+  })
+
+  ipcMain.handle('close-floating-timer', () => {
+    if (floatingTimerWindow && !floatingTimerWindow.isDestroyed()) {
+      floatingTimerWindow.close()
+      floatingTimerWindow = null
+    }
+    return { success: true }
+  })
+
+  ipcMain.handle('is-floating-timer-open', () => {
+    return { success: true, data: floatingTimerWindow !== null && !floatingTimerWindow.isDestroyed() }
+  })
+
+  // Sync timer state to floating window
+  ipcMain.on('sync-timer-to-floating', (_, timerState) => {
+    if (floatingTimerWindow && !floatingTimerWindow.isDestroyed()) {
+      floatingTimerWindow.webContents.send('timer-state-update', timerState)
+    }
+  })
+
+  // Sync timer actions from floating window to main
+  ipcMain.on('floating-timer-action', (_, action) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('floating-timer-action', action)
+    }
+  })
+}
+
+// Export helper function to broadcast timer state to floating window
+export function broadcastTimerStateToFloating(timerState: unknown): void {
+  if (floatingTimerWindow && !floatingTimerWindow.isDestroyed()) {
+    floatingTimerWindow.webContents.send('timer-state-update', timerState)
+  }
+}
+
+app.whenReady().then(async () => {
   // Initialize the database first
   try {
-    initializeDatabase()
+    await initializeDatabase()
     console.log('Database initialized successfully')
   } catch (err) {
     console.error('Database initialization failed:', err)
@@ -52,6 +152,7 @@ app.whenReady().then(() => {
   }
 
   setupIpcHandlers() // Setup IPC handlers after DB is ready
+  setupFloatingTimerHandlers() // Setup floating timer handlers
 
   // Set app user model id for windows
   if (process.platform === 'win32') {
@@ -79,4 +180,3 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   closeDatabase()
 })
-

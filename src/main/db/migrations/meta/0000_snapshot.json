@@ -1,8 +1,6 @@
 {
-  "version": "5",
+  "version": "6",
   "dialect": "sqlite",
-  "id": "8b0e2181-5d31-4767-bbbe-0c850c4526ce",
-  "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "expenses": {
       "name": "expenses",
@@ -70,19 +68,20 @@
         "expenses_project_id_projects_id_fk": {
           "name": "expenses_project_id_projects_id_fk",
           "tableFrom": "expenses",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "invoices": {
       "name": "invoices",
@@ -186,19 +185,20 @@
         "invoices_project_id_projects_id_fk": {
           "name": "invoices_project_id_projects_id_fk",
           "tableFrom": "invoices",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "logs": {
       "name": "logs",
@@ -286,32 +286,33 @@
         "logs_project_id_projects_id_fk": {
           "name": "logs_project_id_projects_id_fk",
           "tableFrom": "logs",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "logs_service_id_services_id_fk": {
           "name": "logs_service_id_services_id_fk",
           "tableFrom": "logs",
-          "tableTo": "services",
           "columnsFrom": [
             "service_id"
           ],
+          "tableTo": "services",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "projects": {
       "name": "projects",
@@ -392,7 +393,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "services": {
       "name": "services",
@@ -443,7 +445,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "settings": {
       "name": "settings",
@@ -473,13 +476,16 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
   "enums": {},
   "_meta": {
-    "schemas": {},
     "tables": {},
     "columns": {}
-  }
+  },
+  "id": "8b0e2181-5d31-4767-bbbe-0c850c4526ce",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "views": {}
 }
