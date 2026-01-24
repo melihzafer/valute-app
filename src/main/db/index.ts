@@ -104,10 +104,11 @@ CREATE TABLE IF NOT EXISTS "assets" (
 `
 
 // Migration SQL for existing databases (add columns that may be missing)
-const MIGRATIONS_SQL = `
--- Add notes column to projects if it doesn't exist
-ALTER TABLE "projects" ADD COLUMN "notes" text;
-`
+// Reserved for future use - uncomment when migrations are needed
+// const MIGRATIONS_SQL = `
+// -- Add notes column to projects if it doesn't exist
+// ALTER TABLE "projects" ADD COLUMN "notes" text;
+// `
 
 /**
  * Initialize the database connection

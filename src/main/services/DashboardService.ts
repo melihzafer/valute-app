@@ -3,7 +3,7 @@
 
 import { getDb } from '../db/index'
 import { projects, logs, expenses, settings } from '../db/schema'
-import { eq, and, gte, isNull, desc } from 'drizzle-orm'
+import { eq, gte, isNull, desc } from 'drizzle-orm'
 
 export interface DashboardStats {
   currentMonthEarnings: number // cents

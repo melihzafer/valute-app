@@ -483,7 +483,7 @@ const DashboardPage: React.FC = () => {
                       borderRadius: '8px'
                     }}
                     labelStyle={{ color: '#a1a1aa' }}
-                    formatter={(value: number) => [formatCurrency(value/100, currency), 'Revenue']}
+                    formatter={(value) => [formatCurrency((value as number)/100, currency), 'Revenue']}
                     labelFormatter={(label) => formatChartDate(label)}
                   />
                   <Area
