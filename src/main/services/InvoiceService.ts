@@ -56,9 +56,7 @@ export async function getUnbilledExpenses(projectId: string): Promise<Expense[]>
 /**
  * Create a new invoice and mark logs/expenses as billed
  */
-export async function createInvoice(
-  invoiceData: Omit<Invoice, 'id'>
-): Promise<Invoice> {
+export async function createInvoice(invoiceData: Omit<Invoice, 'id'>): Promise<Invoice> {
   const db = getDb()
 
   // Extract log and expense IDs from line items
@@ -96,10 +94,7 @@ export async function createInvoice(
 
     // Mark logs as billed
     if (logIds.length > 0) {
-      tx.update(logs)
-        .set({ invoiceId: invoiceId })
-        .where(inArray(logs.id, logIds))
-        .run()
+      tx.update(logs).set({ invoiceId: invoiceId }).where(inArray(logs.id, logIds)).run()
     }
 
     // Mark expenses as billed
@@ -158,11 +153,7 @@ export async function getAllInvoices(): Promise<Invoice[]> {
  */
 export async function getInvoicesByProject(projectId: string): Promise<Invoice[]> {
   const db = getDb()
-  const result = db
-    .select()
-    .from(invoices)
-    .where(eq(invoices.projectId, projectId))
-    .all()
+  const result = db.select().from(invoices).where(eq(invoices.projectId, projectId)).all()
 
   return result.map((inv) => ({
     id: inv.id,

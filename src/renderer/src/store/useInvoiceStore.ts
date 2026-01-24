@@ -94,9 +94,7 @@ export const useInvoiceStore = create<InvoiceStore>((set) => ({
           dueDate: new Date(response.data.dueDate)
         }
         set((state) => ({
-          invoices: state.invoices.map((inv) =>
-            inv.id === invoiceId ? updatedInvoice : inv
-          ),
+          invoices: state.invoices.map((inv) => (inv.id === invoiceId ? updatedInvoice : inv)),
           isLoading: false
         }))
       } else {

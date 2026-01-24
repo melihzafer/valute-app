@@ -21,7 +21,9 @@ const Sidebar: React.FC = () => {
           <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Valute
           </h1>
-          <p className="text-[10px] text-muted-foreground leading-tight">Time Tracking & Invoicing</p>
+          <p className="text-[10px] text-muted-foreground leading-tight">
+            Time Tracking & Invoicing
+          </p>
         </div>
       </div>
       <nav className="flex-1 p-4 space-y-1">

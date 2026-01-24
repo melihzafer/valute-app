@@ -77,10 +77,7 @@ const KPICard: React.FC<KPICardProps> = ({
         <div className="mt-3">
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="text-muted-foreground">Monthly Goal</span>
-            <button
-              onClick={onEditGoal}
-              className="text-primary hover:underline text-xs"
-            >
+            <button onClick={onEditGoal} className="text-primary hover:underline text-xs">
               Edit
             </button>
           </div>
@@ -121,7 +118,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ item, currency, onClick }) 
       </div>
     </div>
     <span className="text-sm font-medium text-primary">
-      {formatCurrency(item.earnings/100, currency)}
+      {formatCurrency(item.earnings / 100, currency)}
     </span>
   </button>
 )
@@ -288,20 +285,22 @@ const DashboardPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Tracking time for</p>
-                  <p className="text-lg font-semibold">{timerStore.currentProjectName || 'Unknown Project'}</p>
+                  <p className="text-lg font-semibold">
+                    {timerStore.currentProjectName || 'Unknown Project'}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-3xl font-bold font-mono">
                     {formatDuration(timerStore.elapsedSeconds + timerStore.accumulatedTime)}
                   </p>
                   {(() => {
-                    const project = projects.find(p => p.id === timerStore.projectId)
+                    const project = projects.find((p) => p.id === timerStore.projectId)
                     if (project?.hourlyRate) {
                       const totalSeconds = timerStore.elapsedSeconds + timerStore.accumulatedTime
                       const earnings = Math.round((totalSeconds / 3600) * project.hourlyRate)
                       return (
                         <p className="text-sm text-emerald-500">
-                          {formatCurrency(earnings/100, currency)}
+                          {formatCurrency(earnings / 100, currency)}
                         </p>
                       )
                     }
@@ -358,11 +357,13 @@ const DashboardPage: React.FC = () => {
                   className="flex-1"
                 >
                   <option value="">Select a project...</option>
-                  {projects.filter(p => p.status === 'active').map(project => (
-                    <option key={project.id} value={project.id}>
-                      {project.name}
-                    </option>
-                  ))}
+                  {projects
+                    .filter((p) => p.status === 'active')
+                    .map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
                 </Select>
                 <Button
                   onClick={() => selectedProjectId && timerStore.startTimer(selectedProjectId)}
@@ -372,11 +373,7 @@ const DashboardPage: React.FC = () => {
                   Start Timer
                 </Button>
               </div>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowLogForm(true)}
-              >
+              <Button variant="outline" className="w-full" onClick={() => setShowLogForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Manual Entry
               </Button>
@@ -483,7 +480,10 @@ const DashboardPage: React.FC = () => {
                       borderRadius: '8px'
                     }}
                     labelStyle={{ color: '#a1a1aa' }}
-                    formatter={(value) => [formatCurrency((value as number)/100, currency), 'Revenue']}
+                    formatter={(value) => [
+                      formatCurrency((value as number) / 100, currency),
+                      'Revenue'
+                    ]}
                     labelFormatter={(label) => formatChartDate(label)}
                   />
                   <Area

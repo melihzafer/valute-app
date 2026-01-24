@@ -19,9 +19,7 @@ export interface Asset {
 /**
  * Create a new asset (link a file/folder to a project)
  */
-export async function createAsset(
-  data: Omit<Asset, 'id' | 'createdAt'>
-): Promise<Asset> {
+export async function createAsset(data: Omit<Asset, 'id' | 'createdAt'>): Promise<Asset> {
   const db = getDb()
 
   const newAsset = {
@@ -45,11 +43,7 @@ export async function createAsset(
 export async function getAssetsByProject(projectId: string): Promise<Asset[]> {
   const db = getDb()
 
-  const result = db
-    .select()
-    .from(assets)
-    .where(eq(assets.projectId, projectId))
-    .all()
+  const result = db.select().from(assets).where(eq(assets.projectId, projectId)).all()
 
   return result as Asset[]
 }

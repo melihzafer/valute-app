@@ -257,18 +257,19 @@ Projenizi inceledim! Freelancer OS konsepti çok güçlü. İşte kategorilere a
 
 ## 🚀 ÖNCELİK SIRASI ÖNERİM
 
-| Öncelik | Özellik | Neden? |
-|---------|---------|--------|
-| 🔴 Yüksek | Gider Takibi | Gerçek kar/zarar için şart |
-| 🔴 Yüksek | Ödeme Takipçisi | Para akışı kontrolü |
-| 🔴 Yüksek | Müşteri Profilleri | Fatura için gerekli |
-| 🟡 Orta | Streak Sistemi | Motivasyon artırır |
-| 🟡 Orta | Günlük Hedefler | Üretkenlik artırır |
-| 🟡 Orta | Başarı Rozetleri | Uygulama bağımlılığı yaratır |
-| 🟢 Düşük | Entegrasyonlar | Sonradan eklenebilir |
-| 🟢 Düşük | E-posta Şablonları | Nice-to-have |
+| Öncelik   | Özellik            | Neden?                       |
+| --------- | ------------------ | ---------------------------- |
+| 🔴 Yüksek | Gider Takibi       | Gerçek kar/zarar için şart   |
+| 🔴 Yüksek | Ödeme Takipçisi    | Para akışı kontrolü          |
+| 🔴 Yüksek | Müşteri Profilleri | Fatura için gerekli          |
+| 🟡 Orta   | Streak Sistemi     | Motivasyon artırır           |
+| 🟡 Orta   | Günlük Hedefler    | Üretkenlik artırır           |
+| 🟡 Orta   | Başarı Rozetleri   | Uygulama bağımlılığı yaratır |
+| 🟢 Düşük  | Entegrasyonlar     | Sonradan eklenebilir         |
+| 🟢 Düşük  | E-posta Şablonları | Nice-to-have                 |
 
 ---
+
 # 🚀 Valute App - Genişletilmiş Özellik Listesi
 
 Senin fikirlerini aldım ve üzerine ekledim. İşte tam liste:
@@ -779,18 +780,18 @@ Senin fikirlerini aldım ve üzerine ekledim. İşte tam liste:
 
 ## 🚀 BAŞLAMAK İÇİN ÖNCELİK SIRASI
 
-| # | Özellik | Zorluk | Etki |
-|---|---------|--------|------|
-| 1 | Focus Guard | 🟢 Kolay | 🔴 Yüksek |
-| 2 | Idle Detection | 🟡 Orta | 🔴 Yüksek |
-| 3 | Global Snippets | 🟢 Kolay | 🔴 Yüksek |
-| 4 | Quick Log Buttons | 🟢 Kolay | 🟡 Orta |
-| 5 | Revenue Simulator | 🟡 Orta | 🔴 Yüksek |
-| 6 | Streak System | 🟢 Kolay | 🟡 Orta |
-| 7 | Deadline Countdown | 🟢 Kolay | 🔴 Yüksek |
-| 8 | Command Palette | 🟡 Orta | 🔴 Yüksek |
-| 9 | Client Health | 🟡 Orta | 🔴 Yüksek |
-| 10 | Profit First Splitter | 🟡 Orta | 🟡 Orta |
+| #   | Özellik               | Zorluk   | Etki      |
+| --- | --------------------- | -------- | --------- |
+| 1   | Focus Guard           | 🟢 Kolay | 🔴 Yüksek |
+| 2   | Idle Detection        | 🟡 Orta  | 🔴 Yüksek |
+| 3   | Global Snippets       | 🟢 Kolay | 🔴 Yüksek |
+| 4   | Quick Log Buttons     | 🟢 Kolay | 🟡 Orta   |
+| 5   | Revenue Simulator     | 🟡 Orta  | 🔴 Yüksek |
+| 6   | Streak System         | 🟢 Kolay | 🟡 Orta   |
+| 7   | Deadline Countdown    | 🟢 Kolay | 🔴 Yüksek |
+| 8   | Command Palette       | 🟡 Orta  | 🔴 Yüksek |
+| 9   | Client Health         | 🟡 Orta  | 🔴 Yüksek |
+| 10  | Profit First Splitter | 🟡 Orta  | 🟡 Orta   |
 
 ---
 
@@ -1320,17 +1321,17 @@ Senin fikirlerini aldım ve genişlettim. İşte kapsamlı liste:
 
 ## 🚀 ÖNCELİKLİ ASSET/NOTES ÖZELLİKLERİ
 
-| # | Özellik | Zorluk | Etki | Öneri |
-|---|---------|--------|------|-------|
-| 1 | Quick Actions (Sağ Tık) | 🟢 Kolay | 🔴 Yüksek | İlk yap |
-| 2 | Asset Preview | 🟡 Orta | 🔴 Yüksek | İlk yap |
-| 3 | Asset Tags | 🟢 Kolay | 🔴 Yüksek | İlk yap |
-| 4 | Recent Files | 🟢 Kolay | 🔴 Yüksek | İlk yap |
-| 5 | Notes Templates | 🟢 Kolay | 🔴 Yüksek | İlk yap |
-| 6 | Global Search | 🟡 Orta | 🔴 Yüksek | 2. aşama |
-| 7 | Watermark Engine | 🟡 Orta | 🟡 Orta | 2. aşama |
-| 8 | The Dropzone | 🟡 Orta | 🔴 Yüksek | 2. aşama |
-| 9 | Version Control | 🔴 Zor | 🟡 Orta | 3. aşama |
-| 10 | Cloud Sync | 🔴 Zor | 🟡 Orta | 3. aşama |
+| #   | Özellik                 | Zorluk   | Etki      | Öneri    |
+| --- | ----------------------- | -------- | --------- | -------- |
+| 1   | Quick Actions (Sağ Tık) | 🟢 Kolay | 🔴 Yüksek | İlk yap  |
+| 2   | Asset Preview           | 🟡 Orta  | 🔴 Yüksek | İlk yap  |
+| 3   | Asset Tags              | 🟢 Kolay | 🔴 Yüksek | İlk yap  |
+| 4   | Recent Files            | 🟢 Kolay | 🔴 Yüksek | İlk yap  |
+| 5   | Notes Templates         | 🟢 Kolay | 🔴 Yüksek | İlk yap  |
+| 6   | Global Search           | 🟡 Orta  | 🔴 Yüksek | 2. aşama |
+| 7   | Watermark Engine        | 🟡 Orta  | 🟡 Orta   | 2. aşama |
+| 8   | The Dropzone            | 🟡 Orta  | 🔴 Yüksek | 2. aşama |
+| 9   | Version Control         | 🔴 Zor   | 🟡 Orta   | 3. aşama |
+| 10  | Cloud Sync              | 🔴 Zor   | 🟡 Orta   | 3. aşama |
 
 ---

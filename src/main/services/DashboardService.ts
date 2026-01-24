@@ -137,7 +137,8 @@ export function getStats(): DashboardStats {
   const monthlyGoal = getMonthlyGoal()
 
   // Calculate goal progress
-  const goalProgress = monthlyGoal > 0 ? Math.min(100, Math.round((currentMonthEarnings / monthlyGoal) * 100)) : 0
+  const goalProgress =
+    monthlyGoal > 0 ? Math.min(100, Math.round((currentMonthEarnings / monthlyGoal) * 100)) : 0
 
   return {
     currentMonthEarnings,

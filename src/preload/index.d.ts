@@ -30,7 +30,11 @@ interface API {
   deleteLog: (id: string) => Promise<IPCResponse<void>>
 
   // Invoices
-  getLogsForInvoice: (startDate: string, endDate: string, projectId?: string) => Promise<IPCResponse<LogIPC[]>>
+  getLogsForInvoice: (
+    startDate: string,
+    endDate: string,
+    projectId?: string
+  ) => Promise<IPCResponse<LogIPC[]>>
   getUnbilledLogs: (projectId: string) => Promise<IPCResponse<LogIPC[]>>
   getUnbilledExpenses: (projectId: string) => Promise<IPCResponse<ExpenseIPC[]>>
   createInvoice: (

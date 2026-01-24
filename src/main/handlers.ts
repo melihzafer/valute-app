@@ -36,12 +36,7 @@ import {
   getUnbilledLogs,
   getUnbilledExpenses
 } from './services/InvoiceService'
-import {
-  createAsset,
-  getAssetsByProject,
-  deleteAsset,
-  openAsset
-} from './services/AssetService'
+import { createAsset, getAssetsByProject, deleteAsset, openAsset } from './services/AssetService'
 import * as DashboardService from './services/DashboardService'
 import type { AssetIPC } from '../shared/types'
 
@@ -212,13 +207,24 @@ export function setupIpcHandlers() {
 
   ipcMain.handle(
     'get-logs-for-invoice',
-    async (_, startDate: string, endDate: string, projectId?: string): Promise<IPCResponse<LogIPC[]>> => {
+    async (
+      _,
+      startDate: string,
+      endDate: string,
+      projectId?: string
+    ): Promise<IPCResponse<LogIPC[]>> => {
       try {
         const start = new Date(startDate)
         // Set end date to end of day (23:59:59.999) to include all logs from that day
         const end = new Date(endDate)
         end.setHours(23, 59, 59, 999)
-        console.log('[get-logs-for-invoice] Query params:', { startDate, endDate, projectId, start, end })
+        console.log('[get-logs-for-invoice] Query params:', {
+          startDate,
+          endDate,
+          projectId,
+          start,
+          end
+        })
         const logs = await getLogsByDateRange(start, end, projectId)
         console.log('[get-logs-for-invoice] Found logs:', logs.length)
         const processedLogs: LogIPC[] = logs.map((log) => ({
@@ -331,24 +337,22 @@ export function setupIpcHandlers() {
     }
   )
 
-  ipcMain.handle(
-    'get-all-invoices',
-    async (): Promise<IPCResponse<InvoiceIPC[]>> => {
-      try {
-        const invoices = await getAllInvoices()
-        const processedInvoices: InvoiceIPC[] = invoices.map((inv) => ({
-          ...inv,
-          issueDate: inv.issueDate instanceof Date ? inv.issueDate.toISOString() : String(inv.issueDate),
-          dueDate: inv.dueDate instanceof Date ? inv.dueDate.toISOString() : String(inv.dueDate)
-        }))
-        return { success: true, data: processedInvoices }
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Failed to fetch invoices'
-        console.error('Error in get-all-invoices IPC handler:', error)
-        return { success: false, error: message }
-      }
+  ipcMain.handle('get-all-invoices', async (): Promise<IPCResponse<InvoiceIPC[]>> => {
+    try {
+      const invoices = await getAllInvoices()
+      const processedInvoices: InvoiceIPC[] = invoices.map((inv) => ({
+        ...inv,
+        issueDate:
+          inv.issueDate instanceof Date ? inv.issueDate.toISOString() : String(inv.issueDate),
+        dueDate: inv.dueDate instanceof Date ? inv.dueDate.toISOString() : String(inv.dueDate)
+      }))
+      return { success: true, data: processedInvoices }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch invoices'
+      console.error('Error in get-all-invoices IPC handler:', error)
+      return { success: false, error: message }
     }
-  )
+  })
 
   ipcMain.handle(
     'get-invoices-by-project',
@@ -357,7 +361,8 @@ export function setupIpcHandlers() {
         const invoices = await getInvoicesByProject(projectId)
         const processedInvoices: InvoiceIPC[] = invoices.map((inv) => ({
           ...inv,
-          issueDate: inv.issueDate instanceof Date ? inv.issueDate.toISOString() : String(inv.issueDate),
+          issueDate:
+            inv.issueDate instanceof Date ? inv.issueDate.toISOString() : String(inv.issueDate),
           dueDate: inv.dueDate instanceof Date ? inv.dueDate.toISOString() : String(inv.dueDate)
         }))
         return { success: true, data: processedInvoices }
@@ -371,13 +376,23 @@ export function setupIpcHandlers() {
 
   ipcMain.handle(
     'update-invoice-status',
-    async (_, id: string, status: 'draft' | 'sent' | 'paid' | 'overdue'): Promise<IPCResponse<InvoiceIPC>> => {
+    async (
+      _,
+      id: string,
+      status: 'draft' | 'sent' | 'paid' | 'overdue'
+    ): Promise<IPCResponse<InvoiceIPC>> => {
       try {
         const invoice = await updateInvoiceStatus(id, status)
         const responseData: InvoiceIPC = {
           ...invoice,
-          issueDate: invoice.issueDate instanceof Date ? invoice.issueDate.toISOString() : String(invoice.issueDate),
-          dueDate: invoice.dueDate instanceof Date ? invoice.dueDate.toISOString() : String(invoice.dueDate)
+          issueDate:
+            invoice.issueDate instanceof Date
+              ? invoice.issueDate.toISOString()
+              : String(invoice.issueDate),
+          dueDate:
+            invoice.dueDate instanceof Date
+              ? invoice.dueDate.toISOString()
+              : String(invoice.dueDate)
         }
         return { success: true, data: responseData }
       } catch (error: unknown) {
@@ -388,19 +403,16 @@ export function setupIpcHandlers() {
     }
   )
 
-  ipcMain.handle(
-    'delete-invoice',
-    async (_, id: string): Promise<IPCResponse<void>> => {
-      try {
-        await deleteInvoice(id)
-        return { success: true }
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Failed to delete invoice'
-        console.error('Error in delete-invoice IPC handler:', error)
-        return { success: false, error: message }
-      }
+  ipcMain.handle('delete-invoice', async (_, id: string): Promise<IPCResponse<void>> => {
+    try {
+      await deleteInvoice(id)
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete invoice'
+      console.error('Error in delete-invoice IPC handler:', error)
+      return { success: false, error: message }
     }
-  )
+  })
 
   // --- Timer Handlers ---
 
@@ -498,7 +510,10 @@ export function setupIpcHandlers() {
     broadcastTimerStateToFloating(timerState)
 
     // Return the final state with the total duration for UI feedback
-    return { success: true, data: { ...finalState, elapsedSeconds: totalDuration, accumulatedTime: totalDuration } }
+    return {
+      success: true,
+      data: { ...finalState, elapsedSeconds: totalDuration, accumulatedTime: totalDuration }
+    }
   })
 
   // --- Dialog Handlers ---
@@ -599,7 +614,10 @@ export function setupIpcHandlers() {
         const newAsset = await createAsset(assetData)
         const result: AssetIPC = {
           ...newAsset,
-          createdAt: newAsset.createdAt instanceof Date ? newAsset.createdAt.toISOString() : String(newAsset.createdAt)
+          createdAt:
+            newAsset.createdAt instanceof Date
+              ? newAsset.createdAt.toISOString()
+              : String(newAsset.createdAt)
         }
         return { success: true, data: result }
       } catch (error: unknown) {
@@ -617,7 +635,10 @@ export function setupIpcHandlers() {
         const assets = await getAssetsByProject(projectId)
         const processedAssets: AssetIPC[] = assets.map((asset) => ({
           ...asset,
-          createdAt: asset.createdAt instanceof Date ? asset.createdAt.toISOString() : String(asset.createdAt)
+          createdAt:
+            asset.createdAt instanceof Date
+              ? asset.createdAt.toISOString()
+              : String(asset.createdAt)
         }))
         return { success: true, data: processedAssets }
       } catch (error: unknown) {
@@ -680,7 +701,10 @@ export function setupIpcHandlers() {
         }
         const result: ProjectIPC = {
           ...project,
-          createdAt: project.createdAt instanceof Date ? project.createdAt.toISOString() : String(project.createdAt)
+          createdAt:
+            project.createdAt instanceof Date
+              ? project.createdAt.toISOString()
+              : String(project.createdAt)
         }
         return { success: true, data: result }
       } catch (error: unknown) {
@@ -697,7 +721,10 @@ export function setupIpcHandlers() {
     'show-open-dialog',
     async (
       _,
-      options: { properties?: Array<'openFile' | 'openDirectory' | 'multiSelections'>; filters?: Array<{ name: string; extensions: string[] }> }
+      options: {
+        properties?: Array<'openFile' | 'openDirectory' | 'multiSelections'>
+        filters?: Array<{ name: string; extensions: string[] }>
+      }
     ): Promise<{ canceled: boolean; filePaths: string[] }> => {
       const result = await dialog.showOpenDialog({
         properties: options.properties || ['openFile', 'openDirectory'],
@@ -709,38 +736,47 @@ export function setupIpcHandlers() {
 
   // --- Dashboard Handlers ---
 
-  ipcMain.handle('get-dashboard-stats', async (): Promise<IPCResponse<DashboardService.DashboardStats>> => {
-    try {
-      const stats = DashboardService.getStats()
-      return { success: true, data: stats }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to get dashboard stats'
-      console.error('Error in get-dashboard-stats IPC handler:', error)
-      return { success: false, error: message }
+  ipcMain.handle(
+    'get-dashboard-stats',
+    async (): Promise<IPCResponse<DashboardService.DashboardStats>> => {
+      try {
+        const stats = DashboardService.getStats()
+        return { success: true, data: stats }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to get dashboard stats'
+        console.error('Error in get-dashboard-stats IPC handler:', error)
+        return { success: false, error: message }
+      }
     }
-  })
+  )
 
-  ipcMain.handle('get-revenue-chart', async (_, days: number): Promise<IPCResponse<DashboardService.ChartDataPoint[]>> => {
-    try {
-      const data = DashboardService.getRevenueChartData(days)
-      return { success: true, data }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to get revenue chart data'
-      console.error('Error in get-revenue-chart IPC handler:', error)
-      return { success: false, error: message }
+  ipcMain.handle(
+    'get-revenue-chart',
+    async (_, days: number): Promise<IPCResponse<DashboardService.ChartDataPoint[]>> => {
+      try {
+        const data = DashboardService.getRevenueChartData(days)
+        return { success: true, data }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to get revenue chart data'
+        console.error('Error in get-revenue-chart IPC handler:', error)
+        return { success: false, error: message }
+      }
     }
-  })
+  )
 
-  ipcMain.handle('get-recent-activity', async (_, limit: number): Promise<IPCResponse<DashboardService.RecentActivityItem[]>> => {
-    try {
-      const data = DashboardService.getRecentActivity(limit)
-      return { success: true, data }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to get recent activity'
-      console.error('Error in get-recent-activity IPC handler:', error)
-      return { success: false, error: message }
+  ipcMain.handle(
+    'get-recent-activity',
+    async (_, limit: number): Promise<IPCResponse<DashboardService.RecentActivityItem[]>> => {
+      try {
+        const data = DashboardService.getRecentActivity(limit)
+        return { success: true, data }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to get recent activity'
+        console.error('Error in get-recent-activity IPC handler:', error)
+        return { success: false, error: message }
+      }
     }
-  })
+  )
 
   ipcMain.handle('get-monthly-goal', async (): Promise<IPCResponse<number>> => {
     try {

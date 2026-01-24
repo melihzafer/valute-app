@@ -152,8 +152,8 @@ export function initializeDatabase(): ReturnType<typeof drizzle> {
     console.log('Running database migrations...')
     try {
       // Check if notes column exists in projects table
-      const projectsInfo = sqlite.prepare("PRAGMA table_info(projects)").all() as { name: string }[]
-      const hasNotesColumn = projectsInfo.some(col => col.name === 'notes')
+      const projectsInfo = sqlite.prepare('PRAGMA table_info(projects)').all() as { name: string }[]
+      const hasNotesColumn = projectsInfo.some((col) => col.name === 'notes')
 
       if (!hasNotesColumn) {
         console.log('Adding notes column to projects table...')
@@ -162,8 +162,8 @@ export function initializeDatabase(): ReturnType<typeof drizzle> {
       }
 
       // Check if invoice_id column exists in logs table
-      const logsInfo = sqlite.prepare("PRAGMA table_info(logs)").all() as { name: string }[]
-      const logsHasInvoiceId = logsInfo.some(col => col.name === 'invoice_id')
+      const logsInfo = sqlite.prepare('PRAGMA table_info(logs)').all() as { name: string }[]
+      const logsHasInvoiceId = logsInfo.some((col) => col.name === 'invoice_id')
 
       if (!logsHasInvoiceId) {
         console.log('Adding invoice_id column to logs table...')
@@ -172,8 +172,8 @@ export function initializeDatabase(): ReturnType<typeof drizzle> {
       }
 
       // Check if invoice_id column exists in expenses table
-      const expensesInfo = sqlite.prepare("PRAGMA table_info(expenses)").all() as { name: string }[]
-      const expensesHasInvoiceId = expensesInfo.some(col => col.name === 'invoice_id')
+      const expensesInfo = sqlite.prepare('PRAGMA table_info(expenses)').all() as { name: string }[]
+      const expensesHasInvoiceId = expensesInfo.some((col) => col.name === 'invoice_id')
 
       if (!expensesHasInvoiceId) {
         console.log('Adding invoice_id column to expenses table...')

@@ -180,17 +180,18 @@ export async function getLogsByDateRange(
   console.log('[getLogsByDateRange] Input params:', { startDate, endDate, projectId })
 
   // Build WHERE clause conditionally
-  const conditions = [
-    gte(logs.startTime, startDate as any),
-    lte(logs.startTime, endDate as any)
-  ]
+  const conditions = [gte(logs.startTime, startDate as any), lte(logs.startTime, endDate as any)]
 
   if (projectId) {
     conditions.push(eq(logs.projectId, projectId))
   }
 
   // Pass Date objects directly to Drizzle ORM timestamp comparison
-  const result = db.select().from(logs).where(and(...conditions)).all()
+  const result = db
+    .select()
+    .from(logs)
+    .where(and(...conditions))
+    .all()
   console.log('[getLogsByDateRange] Query returned:', result.length, 'logs')
 
   // Map DB fields to frontend fields

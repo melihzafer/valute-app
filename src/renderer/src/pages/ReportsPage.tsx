@@ -100,7 +100,7 @@ const ReportsPage: React.FC = () => {
       `Total Hours: ${Math.floor(totalHours / 3600)}h ${Math.floor((totalHours % 3600) / 60)}m`,
       14,
       yPos
-    ) 
+    )
     yPos += 7
     //i want total earning to be shown as 100.00 instead of 10000
     doc.text(`Total Earnings: ${(totalEarnings / 100).toFixed(2)} ${project.currency}`, 14, yPos)
@@ -134,8 +134,8 @@ const ReportsPage: React.FC = () => {
     // Add the table to the PDF
     autoTable(doc, {
       startY: yPos,
-      head: [tableColumn.map(col => col.header)],
-      body: tableRows.map(row => tableColumn.map(col => row[col.dataKey])),
+      head: [tableColumn.map((col) => col.header)],
+      body: tableRows.map((row) => tableColumn.map((col) => row[col.dataKey])),
       theme: 'striped',
       headStyles: {
         fillColor: [240, 240, 240], // Lighter, more neutral gray

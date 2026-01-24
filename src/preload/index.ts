@@ -17,20 +17,17 @@ const api = {
   // Invoices
   getLogsForInvoice: (startDate: string, endDate: string, projectId?: string) =>
     ipcRenderer.invoke('get-logs-for-invoice', startDate, endDate, projectId),
-  getUnbilledLogs: (projectId: string) =>
-    ipcRenderer.invoke('get-unbilled-logs', projectId),
+  getUnbilledLogs: (projectId: string) => ipcRenderer.invoke('get-unbilled-logs', projectId),
   getUnbilledExpenses: (projectId: string) =>
     ipcRenderer.invoke('get-unbilled-expenses', projectId),
   createInvoice: (data: unknown, pdfBuffer?: ArrayBuffer) =>
     ipcRenderer.invoke('create-invoice', data, pdfBuffer),
-  getAllInvoices: () =>
-    ipcRenderer.invoke('get-all-invoices'),
+  getAllInvoices: () => ipcRenderer.invoke('get-all-invoices'),
   getInvoicesByProject: (projectId: string) =>
     ipcRenderer.invoke('get-invoices-by-project', projectId),
   updateInvoiceStatus: (id: string, status: 'draft' | 'sent' | 'paid' | 'overdue') =>
     ipcRenderer.invoke('update-invoice-status', id, status),
-  deleteInvoice: (id: string) =>
-    ipcRenderer.invoke('delete-invoice', id),
+  deleteInvoice: (id: string) => ipcRenderer.invoke('delete-invoice', id),
 
   // Expenses
   getExpensesByProject: (projectId: string) =>
@@ -59,10 +56,13 @@ const api = {
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
 
   // Asset Vault
-  createAsset: (data: { projectId: string; name: string; path: string; type: 'folder' | 'file' | 'link' }) =>
-    ipcRenderer.invoke('create-asset', data),
-  getAssetsByProject: (projectId: string) =>
-    ipcRenderer.invoke('get-assets-by-project', projectId),
+  createAsset: (data: {
+    projectId: string
+    name: string
+    path: string
+    type: 'folder' | 'file' | 'link'
+  }) => ipcRenderer.invoke('create-asset', data),
+  getAssetsByProject: (projectId: string) => ipcRenderer.invoke('get-assets-by-project', projectId),
   deleteAsset: (id: string) => ipcRenderer.invoke('delete-asset', id),
   openAsset: (path: string) => ipcRenderer.invoke('open-asset', path),
 
@@ -75,7 +75,8 @@ const api = {
   openFloatingTimer: () => ipcRenderer.invoke('open-floating-timer'),
   closeFloatingTimer: () => ipcRenderer.invoke('close-floating-timer'),
   isFloatingTimerOpen: () => ipcRenderer.invoke('is-floating-timer-open'),
-  syncTimerToFloating: (timerState: unknown) => ipcRenderer.send('sync-timer-to-floating', timerState),
+  syncTimerToFloating: (timerState: unknown) =>
+    ipcRenderer.send('sync-timer-to-floating', timerState),
   sendFloatingTimerAction: (action: string) => ipcRenderer.send('floating-timer-action', action),
   onTimerStateUpdate: (callback: (timerState: unknown) => void) => {
     ipcRenderer.on('timer-state-update', (_, timerState) => callback(timerState))

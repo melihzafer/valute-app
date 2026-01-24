@@ -118,7 +118,10 @@ function setupFloatingTimerHandlers(): void {
   })
 
   ipcMain.handle('is-floating-timer-open', () => {
-    return { success: true, data: floatingTimerWindow !== null && !floatingTimerWindow.isDestroyed() }
+    return {
+      success: true,
+      data: floatingTimerWindow !== null && !floatingTimerWindow.isDestroyed()
+    }
   })
 
   // Sync timer state to floating window
