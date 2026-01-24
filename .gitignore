@@ -4,3 +4,7 @@ out
 .DS_Store
 .eslintcache
 *.log*
+
+# Ignore all markdown files except README
+*.md
+!README.md
