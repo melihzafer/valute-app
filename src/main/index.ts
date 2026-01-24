@@ -2,7 +2,7 @@
 
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
-// import icon from '../../resources/icon.png?asset' // Placeholder for icon
+import icon from '../../resources/icon.png?asset'
 import { setupIpcHandlers } from './handlers'
 import { initializeDatabase, closeDatabase } from './db/index'
 
@@ -15,6 +15,8 @@ function createWindow(): void {
     height: 900,
     show: false,
     autoHideMenuBar: true,
+    ...(process.platform === 'linux' ? { icon } : {}),
+    icon, // Set icon for Windows/Linux
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -62,6 +64,7 @@ function createFloatingTimerWindow(): BrowserWindow {
     resizable: true,
     skipTaskbar: true,
     show: false,
+    icon, // Set icon for floating window
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,

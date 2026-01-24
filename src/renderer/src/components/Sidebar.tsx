@@ -4,6 +4,7 @@ import React from 'react'
 import { NavLink } from 'react-router-dom'
 import { CalendarDays, Package, ReceiptText, Settings } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
+import icon from '../assets/icon.png'
 
 const Sidebar: React.FC = () => {
   const navItems = [
@@ -14,11 +15,14 @@ const Sidebar: React.FC = () => {
 
   return (
     <aside className="w-64 bg-card/95 backdrop-blur-sm border-r border-border min-h-screen flex flex-col">
-      <div className="p-6 border-b border-border">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-          Valute
-        </h1>
-        <p className="text-xs text-muted-foreground mt-1">Time Tracking & Invoicing</p>
+      <div className="p-6 border-b border-border flex items-center gap-3">
+        <img src={icon} alt="Valute Icon" className="w-8 h-8 rounded-lg" />
+        <div>
+          <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Valute
+          </h1>
+          <p className="text-[10px] text-muted-foreground leading-tight">Time Tracking & Invoicing</p>
+        </div>
       </div>
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => (
