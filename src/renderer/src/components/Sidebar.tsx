@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { CalendarDays, Package, ReceiptText, Settings } from 'lucide-react'
+import { CalendarDays, Package, ReceiptText, Settings, Users } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 import icon from '../assets/icon.png'
 
@@ -10,6 +10,7 @@ const Sidebar: React.FC = () => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: CalendarDays },
     { path: '/projects', label: 'Projects', icon: Package },
+    { path: '/clients', label: 'Clients', icon: Users },
     { path: '/reports', label: 'Reports', icon: ReceiptText }
   ]
 

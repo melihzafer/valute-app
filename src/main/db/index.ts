@@ -101,6 +101,31 @@ CREATE TABLE IF NOT EXISTS "assets" (
   "created_at" integer,
   FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE cascade
 );
+
+CREATE TABLE IF NOT EXISTS "clients" (
+  "id" text PRIMARY KEY NOT NULL,
+  "name" text NOT NULL,
+  "company" text,
+  "email" text,
+  "phone" text,
+  "address" text,
+  "notes" text,
+  "created_at" integer
+);
+
+CREATE TABLE IF NOT EXISTS "payments" (
+  "id" text PRIMARY KEY NOT NULL,
+  "client_id" text NOT NULL,
+  "invoice_id" text,
+  "amount" integer NOT NULL,
+  "date" integer NOT NULL,
+  "method" text NOT NULL,
+  "reference" text,
+  "notes" text,
+  "created_at" integer,
+  FOREIGN KEY ("client_id") REFERENCES "clients"("id") ON UPDATE no action ON DELETE cascade,
+  FOREIGN KEY ("invoice_id") REFERENCES "invoices"("id") ON UPDATE no action ON DELETE set null
+);
 `
 
 // Migration SQL for existing databases (add columns that may be missing)
@@ -179,6 +204,15 @@ export function initializeDatabase(): ReturnType<typeof drizzle> {
         console.log('Adding invoice_id column to expenses table...')
         sqlite.exec('ALTER TABLE "expenses" ADD COLUMN "invoice_id" text;')
         console.log('invoice_id column added to expenses successfully')
+      }
+
+      // Check if client_id column exists in projects table
+      const projectsHasClientId = projectsInfo.some((col) => col.name === 'client_id')
+
+      if (!projectsHasClientId) {
+        console.log('Adding client_id column to projects table...')
+        sqlite.exec('ALTER TABLE "projects" ADD COLUMN "client_id" text REFERENCES clients(id);')
+        console.log('client_id column added to projects successfully')
       }
     } catch (migrationError) {
       // Column might already exist, that's fine

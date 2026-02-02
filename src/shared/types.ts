@@ -2,9 +2,85 @@
 
 export type PricingModel = 'HOURLY' | 'FIXED' | 'UNIT_BASED' | 'SUBSCRIPTION'
 
+export type PaymentMethod = 'bank_transfer' | 'credit_card' | 'cash' | 'check' | 'other'
+
+// Client types
+export interface Client {
+  id: string
+  name: string
+  company?: string
+  email?: string
+  phone?: string
+  address?: string
+  notes?: string
+  createdAt: Date
+}
+
+// IPC-safe version with string dates
+export interface ClientIPC {
+  id: string
+  name: string
+  company?: string
+  email?: string
+  phone?: string
+  address?: string
+  notes?: string
+  createdAt: string
+}
+
+// Payment types
+export interface Payment {
+  id: string
+  clientId: string
+  invoiceId?: string | null
+  amount: number // cents
+  date: Date
+  method: PaymentMethod
+  reference?: string
+  notes?: string
+  createdAt: Date
+}
+
+// IPC-safe version
+export interface PaymentIPC {
+  id: string
+  clientId: string
+  invoiceId?: string | null
+  amount: number // cents
+  date: string
+  method: PaymentMethod
+  reference?: string
+  notes?: string
+  createdAt: string
+}
+
+// Balance/Ledger types
+export interface ClientBalance {
+  clientId: string
+  totalInvoiced: number // cents - sum of all invoice totals
+  totalPaid: number // cents - sum of all payments
+  balance: number // cents - totalInvoiced - totalPaid (positive = owes money)
+}
+
+export interface LedgerEntry {
+  id: string
+  type: 'invoice' | 'payment'
+  date: string // ISO string
+  description: string
+  amount: number // cents (positive for invoices, negative for payments in display)
+  runningBalance: number // cents
+  referenceId: string // invoice ID or payment ID
+}
+
+export interface ClientWithBalance extends ClientIPC {
+  balance: number // cents
+  projectCount: number
+}
+
 export interface Project {
   id: string
   name: string
+  clientId?: string
   clientName?: string
   pricingModel: PricingModel
   hourlyRate: number // For HOURLY, or price per unit for UNIT_BASED (in cents)
@@ -20,6 +96,7 @@ export interface Project {
 export interface ProjectIPC {
   id: string
   name: string
+  clientId?: string
   clientName?: string
   pricingModel: PricingModel
   hourlyRate: number

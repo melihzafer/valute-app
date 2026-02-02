@@ -9,7 +9,12 @@ import type {
   InvoiceIPC,
   ExpenseIPC,
   IPCResponse,
-  TimerState
+  TimerState,
+  ClientIPC,
+  PaymentIPC,
+  ClientBalance,
+  ClientWithBalance,
+  LedgerEntry
 } from '../shared/types'
 import { broadcastTimerStateToFloating } from './index'
 import {
@@ -38,6 +43,8 @@ import {
 } from './services/InvoiceService'
 import { createAsset, getAssetsByProject, deleteAsset, openAsset } from './services/AssetService'
 import * as DashboardService from './services/DashboardService'
+import * as ClientService from './services/ClientService'
+import * as PaymentService from './services/PaymentService'
 import type { AssetIPC } from '../shared/types'
 
 // Timer state stored in memory (could be persisted if needed)
@@ -796,6 +803,264 @@ export function setupIpcHandlers() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to set monthly goal'
       console.error('Error in set-monthly-goal IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  // --- Client Handlers ---
+
+  ipcMain.handle('get-clients', async (): Promise<IPCResponse<ClientIPC[]>> => {
+    try {
+      const clients = await ClientService.getClients()
+      const processed: ClientIPC[] = clients.map((c) => ({
+        ...c,
+        createdAt: c.createdAt instanceof Date ? c.createdAt.toISOString() : String(c.createdAt)
+      }))
+      return { success: true, data: processed }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch clients'
+      console.error('Error in get-clients IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle(
+    'get-clients-with-balances',
+    async (): Promise<IPCResponse<ClientWithBalance[]>> => {
+      try {
+        const clients = await ClientService.getClientsWithBalances()
+        return { success: true, data: clients }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch clients with balances'
+        console.error('Error in get-clients-with-balances IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'get-client-by-id',
+    async (_, id: string): Promise<IPCResponse<ClientIPC | null>> => {
+      try {
+        const client = await ClientService.getClientById(id)
+        if (!client) {
+          return { success: true, data: null }
+        }
+        const result: ClientIPC = {
+          ...client,
+          createdAt:
+            client.createdAt instanceof Date ? client.createdAt.toISOString() : String(client.createdAt)
+        }
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch client'
+        console.error('Error in get-client-by-id IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'create-client',
+    async (_, clientData: Omit<ClientIPC, 'id' | 'createdAt'>): Promise<IPCResponse<ClientIPC>> => {
+      try {
+        const newClient = await ClientService.createClient(clientData)
+        const result: ClientIPC = {
+          ...newClient,
+          createdAt:
+            newClient.createdAt instanceof Date
+              ? newClient.createdAt.toISOString()
+              : String(newClient.createdAt)
+        }
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to create client'
+        console.error('Error in create-client IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'update-client',
+    async (
+      _,
+      id: string,
+      clientData: Partial<Omit<ClientIPC, 'createdAt'>>
+    ): Promise<IPCResponse<ClientIPC>> => {
+      try {
+        const updatedClient = await ClientService.updateClient(id, clientData)
+        const result: ClientIPC = {
+          ...updatedClient,
+          createdAt:
+            updatedClient.createdAt instanceof Date
+              ? updatedClient.createdAt.toISOString()
+              : String(updatedClient.createdAt)
+        }
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to update client'
+        console.error('Error in update-client IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle('delete-client', async (_, id: string): Promise<IPCResponse<void>> => {
+    try {
+      await ClientService.deleteClient(id)
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete client'
+      console.error('Error in delete-client IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle(
+    'get-client-balance',
+    async (_, clientId: string): Promise<IPCResponse<ClientBalance>> => {
+      try {
+        const balance = await ClientService.getClientBalance(clientId)
+        return { success: true, data: balance }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to get client balance'
+        console.error('Error in get-client-balance IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'get-client-ledger',
+    async (_, clientId: string): Promise<IPCResponse<LedgerEntry[]>> => {
+      try {
+        const ledger = await ClientService.getClientLedger(clientId)
+        return { success: true, data: ledger }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to get client ledger'
+        console.error('Error in get-client-ledger IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'get-projects-by-client',
+    async (_, clientId: string): Promise<IPCResponse<ProjectIPC[]>> => {
+      try {
+        const projects = await ClientService.getProjectsByClient(clientId)
+        const processed: ProjectIPC[] = projects.map((p) => ({
+          ...p,
+          createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : String(p.createdAt)
+        }))
+        return { success: true, data: processed }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to get projects by client'
+        console.error('Error in get-projects-by-client IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle('migrate-client-names', async (): Promise<IPCResponse<{ created: number; linked: number }>> => {
+    try {
+      const result = await ClientService.migrateClientNames()
+      return { success: true, data: result }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to migrate client names'
+      console.error('Error in migrate-client-names IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  // --- Payment Handlers ---
+
+  ipcMain.handle(
+    'get-payments-by-client',
+    async (_, clientId: string): Promise<IPCResponse<PaymentIPC[]>> => {
+      try {
+        const payments = await PaymentService.getPaymentsByClient(clientId)
+        const processed: PaymentIPC[] = payments.map((p) => ({
+          ...p,
+          date: p.date instanceof Date ? p.date.toISOString() : String(p.date),
+          createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : String(p.createdAt)
+        }))
+        return { success: true, data: processed }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch payments'
+        console.error('Error in get-payments-by-client IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'create-payment',
+    async (_, paymentData: Omit<PaymentIPC, 'id' | 'createdAt'>): Promise<IPCResponse<PaymentIPC>> => {
+      try {
+        const parsedData = {
+          ...paymentData,
+          date: new Date(paymentData.date)
+        }
+        const newPayment = await PaymentService.createPayment(parsedData)
+        const result: PaymentIPC = {
+          ...newPayment,
+          date: newPayment.date instanceof Date ? newPayment.date.toISOString() : String(newPayment.date),
+          createdAt:
+            newPayment.createdAt instanceof Date
+              ? newPayment.createdAt.toISOString()
+              : String(newPayment.createdAt)
+        }
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to create payment'
+        console.error('Error in create-payment IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'update-payment',
+    async (
+      _,
+      id: string,
+      paymentData: Partial<Omit<PaymentIPC, 'createdAt'>>
+    ): Promise<IPCResponse<PaymentIPC>> => {
+      try {
+        const parsedData: any = { ...paymentData }
+        if (paymentData.date) {
+          parsedData.date = new Date(paymentData.date)
+        }
+        const updatedPayment = await PaymentService.updatePayment(id, parsedData)
+        const result: PaymentIPC = {
+          ...updatedPayment,
+          date:
+            updatedPayment.date instanceof Date
+              ? updatedPayment.date.toISOString()
+              : String(updatedPayment.date),
+          createdAt:
+            updatedPayment.createdAt instanceof Date
+              ? updatedPayment.createdAt.toISOString()
+              : String(updatedPayment.createdAt)
+        }
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to update payment'
+        console.error('Error in update-payment IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle('delete-payment', async (_, id: string): Promise<IPCResponse<void>> => {
+    try {
+      await PaymentService.deletePayment(id)
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete payment'
+      console.error('Error in delete-payment IPC handler:', error)
       return { success: false, error: message }
     }
   })

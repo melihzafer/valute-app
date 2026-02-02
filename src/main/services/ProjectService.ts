@@ -31,6 +31,7 @@ export async function createProject(
     id: uuidv4(),
     name: projectData.name,
     clientName: projectData.clientName || null,
+    clientId: (projectData as any).clientId || null, // Link to client entity
     type: projectData.pricingModel || 'HOURLY', // CRITICAL FIX: Map pricingModel to type
     currency: projectData.currency || 'USD',
     hourlyRate: projectData.hourlyRate || 0,
@@ -63,6 +64,7 @@ export async function updateProject(
   const updateData: any = {
     name: projectData.name,
     clientName: projectData.clientName,
+    clientId: (projectData as any).clientId, // Link to client entity
     type: projectData.pricingModel, // Map pricingModel to type
     currency: projectData.currency,
     hourlyRate: projectData.hourlyRate,

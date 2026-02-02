@@ -3,11 +3,24 @@
 
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
 
+// clients: Client entities for client management
+export const clients = sqliteTable('clients', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  company: text('company'),
+  email: text('email'),
+  phone: text('phone'),
+  address: text('address'),
+  notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
 // projects: Core project definitions
 export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  clientName: text('client_name'),
+  clientId: text('client_id').references(() => clients.id, { onDelete: 'set null' }), // NEW: Foreign key to clients
+  clientName: text('client_name'), // KEEP: For backward compatibility during migration
   type: text('type').notNull(), // 'HOURLY', 'FIXED', 'UNIT_BASED', 'SUBSCRIPTION'
   currency: text('currency').default('USD'),
   hourlyRate: integer('hourly_rate'), // Cents (e.g. $50.00 -> 5000) or Price per Unit for UNIT_BASED
@@ -88,6 +101,21 @@ export const settings = sqliteTable('settings', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
 })
 
+// payments: Financial payments from clients
+export const payments = sqliteTable('payments', {
+  id: text('id').primaryKey(),
+  clientId: text('client_id')
+    .notNull()
+    .references(() => clients.id, { onDelete: 'cascade' }),
+  invoiceId: text('invoice_id').references(() => invoices.id, { onDelete: 'set null' }), // Optional: link to specific invoice
+  amount: integer('amount').notNull(), // Cents
+  date: integer('date', { mode: 'timestamp' }).notNull(),
+  method: text('method').notNull(), // 'bank_transfer', 'credit_card', 'cash', 'check', 'other'
+  reference: text('reference'), // Check number, transaction ID, etc.
+  notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
 // assets: Linked files/folders for projects (Asset Vault)
 export const assets = sqliteTable('assets', {
   id: text('id').primaryKey(),
@@ -121,3 +149,9 @@ export type NewSetting = typeof settings.$inferInsert
 
 export type Asset = typeof assets.$inferSelect
 export type NewAsset = typeof assets.$inferInsert
+
+export type Client = typeof clients.$inferSelect
+export type NewClient = typeof clients.$inferInsert
+
+export type Payment = typeof payments.$inferSelect
+export type NewPayment = typeof payments.$inferInsert

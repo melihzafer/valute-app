@@ -1,12 +1,13 @@
 // src/renderer/src/components/EditProjectForm.tsx
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Input } from './ui/Input'
 import { Button } from './ui/Button'
 import { Select } from './ui/Select'
 import { Dialog } from './ui/Dialog'
 import { Project } from '../../../shared/types'
 import { Edit } from 'lucide-react'
+import { useClientStore } from '../store/useClientStore'
 
 interface EditProjectFormProps {
   projectToEdit: Project
@@ -15,7 +16,16 @@ interface EditProjectFormProps {
 }
 
 const EditProjectForm: React.FC<EditProjectFormProps> = ({ projectToEdit, onSubmit, onClose }) => {
+  const { clients, fetchClientsWithBalances } = useClientStore()
+
+  // Load clients on mount
+  useEffect(() => {
+    fetchClientsWithBalances()
+  }, [fetchClientsWithBalances])
+
   const [name, setName] = useState(projectToEdit.name)
+  const [clientId, setClientId] = useState<string>((projectToEdit as any).clientId || '')
+  const [clientName, setClientName] = useState(projectToEdit.clientName || '')
   const [hourlyRate, setHourlyRate] = useState<number>(projectToEdit.hourlyRate / 100) // Convert from cents to dollars
   const [currency, setCurrency] = useState<string>(projectToEdit.currency)
   const [status, setStatus] = useState<'active' | 'archived'>(projectToEdit.status)
@@ -35,13 +45,15 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({ projectToEdit, onSubm
     try {
       const updatedProjectData = {
         name,
+        clientId: clientId || undefined,
+        clientName: clientName || undefined,
         pricingModel: projectToEdit.pricingModel,
         hourlyRate: Math.round(hourlyRate * 100),
         fixedPrice: projectToEdit.fixedPrice || 0,
         unitName: projectToEdit.unitName || undefined,
         currency,
         status
-      }
+      } as any
 
       await onSubmit(updatedProjectData)
       onClose()
@@ -75,6 +87,33 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({ projectToEdit, onSubm
           placeholder="e.g., Website Redesign"
           required
         />
+      </div>
+      <div>
+        <label htmlFor="clientId" className="block text-sm font-medium text-foreground mb-2">
+          Client
+        </label>
+        <Select
+          id="clientId"
+          value={clientId}
+          onChange={(e) => {
+            const selectedId = e.target.value
+            setClientId(selectedId)
+            const selectedClient = clients.find((c) => c.id === selectedId)
+            if (selectedClient) {
+              setClientName(selectedClient.name)
+            } else {
+              setClientName('')
+            }
+          }}
+        >
+          <option value="">No client selected</option>
+          {clients.map((client) => (
+            <option key={client.id} value={client.id}>
+              {client.name}
+              {client.company ? ` (${client.company})` : ''}
+            </option>
+          ))}
+        </Select>
       </div>
       <div>
         <label htmlFor="hourlyRate" className="block text-sm font-medium text-foreground mb-2">

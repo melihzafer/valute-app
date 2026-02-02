@@ -96,7 +96,25 @@ const api = {
   getRevenueChart: (days: number) => ipcRenderer.invoke('get-revenue-chart', days),
   getRecentActivity: (limit: number) => ipcRenderer.invoke('get-recent-activity', limit),
   getMonthlyGoal: () => ipcRenderer.invoke('get-monthly-goal'),
-  setMonthlyGoal: (amountCents: number) => ipcRenderer.invoke('set-monthly-goal', amountCents)
+  setMonthlyGoal: (amountCents: number) => ipcRenderer.invoke('set-monthly-goal', amountCents),
+
+  // Clients
+  getClients: () => ipcRenderer.invoke('get-clients'),
+  getClientsWithBalances: () => ipcRenderer.invoke('get-clients-with-balances'),
+  getClientById: (id: string) => ipcRenderer.invoke('get-client-by-id', id),
+  createClient: (data: unknown) => ipcRenderer.invoke('create-client', data),
+  updateClient: (id: string, data: unknown) => ipcRenderer.invoke('update-client', id, data),
+  deleteClient: (id: string) => ipcRenderer.invoke('delete-client', id),
+  getClientBalance: (clientId: string) => ipcRenderer.invoke('get-client-balance', clientId),
+  getClientLedger: (clientId: string) => ipcRenderer.invoke('get-client-ledger', clientId),
+  getProjectsByClient: (clientId: string) => ipcRenderer.invoke('get-projects-by-client', clientId),
+  migrateClientNames: () => ipcRenderer.invoke('migrate-client-names'),
+
+  // Payments
+  getPaymentsByClient: (clientId: string) => ipcRenderer.invoke('get-payments-by-client', clientId),
+  createPayment: (data: unknown) => ipcRenderer.invoke('create-payment', data),
+  updatePayment: (id: string, data: unknown) => ipcRenderer.invoke('update-payment', id, data),
+  deletePayment: (id: string) => ipcRenderer.invoke('delete-payment', id)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

@@ -1,11 +1,12 @@
 // src/renderer/src/components/CreateProjectForm.tsx
 // Linear-style Project Creation Form with Visual Card Selection
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Clock, Hash, DollarSign, Repeat } from 'lucide-react'
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { useProjectStore } from '../store/useProjectStore'
+import { useClientStore } from '../store/useClientStore'
 import type { PricingModel } from '../../../shared/types'
 import { Input } from './ui/Input'
 import { Button } from './ui/Button'
@@ -56,9 +57,16 @@ const pricingCards: PricingCard[] = [
 const CreateProjectForm: React.FC<CreateProjectFormProps> = ({ initialData, onClose }) => {
   const addProject = useProjectStore((state) => state.addProject)
   const updateProject = useProjectStore((state) => state.updateProject)
+  const { clients, fetchClientsWithBalances } = useClientStore()
+
+  // Load clients on mount
+  useEffect(() => {
+    fetchClientsWithBalances()
+  }, [fetchClientsWithBalances])
 
   // Form State
   const [name, setName] = useState(initialData?.name || '')
+  const [clientId, setClientId] = useState<string>((initialData as any)?.clientId || '')
   const [clientName, setClientName] = useState(initialData?.clientName || '')
   const [pricingModel, setPricingModel] = useState<PricingModel>(
     initialData?.pricingModel || 'HOURLY'
@@ -118,6 +126,7 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({ initialData, onCl
       // Prepare payload with correct field mapping
       const projectPayload: any = {
         name: name.trim(),
+        clientId: clientId || undefined, // Link to client entity
         clientName: clientName.trim() || undefined,
         pricingModel, // This will be mapped to 'type' in the backend
         currency,
@@ -160,6 +169,7 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({ initialData, onCl
 
       // Success - reset and close
       setName('')
+      setClientId('')
       setClientName('')
       setPricingModel('HOURLY')
       setRate(0)
@@ -215,17 +225,56 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({ initialData, onCl
         />
       </div>
 
-      {/* Client Name */}
+      {/* Client Selection */}
+      <div className="space-y-2">
+        <label htmlFor="clientId" className="block text-sm font-medium text-foreground">
+          Client
+        </label>
+        <Select
+          id="clientId"
+          value={clientId}
+          onChange={(e) => {
+            const selectedId = e.target.value
+            setClientId(selectedId)
+            // Auto-fill clientName from selected client
+            const selectedClient = clients.find((c) => c.id === selectedId)
+            if (selectedClient) {
+              setClientName(selectedClient.name)
+            } else {
+              setClientName('')
+            }
+          }}
+        >
+          <option value="">No client selected</option>
+          {clients.map((client) => (
+            <option key={client.id} value={client.id}>
+              {client.name}
+              {client.company ? ` (${client.company})` : ''}
+            </option>
+          ))}
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          Link this project to an existing client for balance tracking
+        </p>
+      </div>
+
+      {/* Client Name (legacy/manual entry) */}
       <div className="space-y-2">
         <label htmlFor="clientName" className="block text-sm font-medium text-foreground">
-          Client Name
+          Client Name (Manual)
         </label>
         <Input
           id="clientName"
           value={clientName}
           onChange={(e) => setClientName(e.target.value)}
           placeholder="e.g., Acme Corp"
+          disabled={!!clientId}
         />
+        {clientId && (
+          <p className="text-xs text-muted-foreground">
+            Auto-filled from selected client
+          </p>
+        )}
       </div>
 
       {/* Pricing Model - Visual Cards */}

@@ -9,7 +9,12 @@ import type {
   IPCResponse,
   DashboardStats,
   ChartDataPoint,
-  RecentActivityItem
+  RecentActivityItem,
+  ClientIPC,
+  PaymentIPC,
+  ClientBalance,
+  ClientWithBalance,
+  LedgerEntry
 } from '../shared/types'
 
 interface API {
@@ -100,6 +105,24 @@ interface API {
   getRecentActivity: (limit: number) => Promise<IPCResponse<RecentActivityItem[]>>
   getMonthlyGoal: () => Promise<IPCResponse<number>>
   setMonthlyGoal: (amountCents: number) => Promise<IPCResponse<void>>
+
+  // Clients
+  getClients: () => Promise<IPCResponse<ClientIPC[]>>
+  getClientsWithBalances: () => Promise<IPCResponse<ClientWithBalance[]>>
+  getClientById: (id: string) => Promise<IPCResponse<ClientIPC | null>>
+  createClient: (data: Omit<ClientIPC, 'id' | 'createdAt'>) => Promise<IPCResponse<ClientIPC>>
+  updateClient: (id: string, data: Partial<Omit<ClientIPC, 'createdAt'>>) => Promise<IPCResponse<ClientIPC>>
+  deleteClient: (id: string) => Promise<IPCResponse<void>>
+  getClientBalance: (clientId: string) => Promise<IPCResponse<ClientBalance>>
+  getClientLedger: (clientId: string) => Promise<IPCResponse<LedgerEntry[]>>
+  getProjectsByClient: (clientId: string) => Promise<IPCResponse<ProjectIPC[]>>
+  migrateClientNames: () => Promise<IPCResponse<{ created: number; linked: number }>>
+
+  // Payments
+  getPaymentsByClient: (clientId: string) => Promise<IPCResponse<PaymentIPC[]>>
+  createPayment: (data: Omit<PaymentIPC, 'id' | 'createdAt'>) => Promise<IPCResponse<PaymentIPC>>
+  updatePayment: (id: string, data: Partial<Omit<PaymentIPC, 'createdAt'>>) => Promise<IPCResponse<PaymentIPC>>
+  deletePayment: (id: string) => Promise<IPCResponse<void>>
 }
 
 declare global {
