@@ -72,10 +72,10 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({ initialData, onCl
     initialData?.pricingModel || 'HOURLY'
   )
   const [rate, setRate] = useState<number>(
-    initialData?.hourlyRate ? initialData.hourlyRate / 100 : 0
+    initialData?.hourlyRate ? initialData.hourlyRate / 10000 : 0
   )
   const [fixedPrice, setFixedPrice] = useState<number>(
-    initialData?.fixedPrice ? initialData.fixedPrice / 100 : 0
+    initialData?.fixedPrice ? initialData.fixedPrice / 10000 : 0
   )
   const [unitName, setUnitName] = useState(initialData?.unitName || '')
   const [currency, setCurrency] = useState<string>(initialData?.currency || 'USD')

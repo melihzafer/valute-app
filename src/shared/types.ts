@@ -271,3 +271,84 @@ export interface RecentActivityItem {
   date: string // ISO string
   notes: string | null
 }
+
+// --- Settings Types (Phase 9) ---
+
+export type Currency = 'USD' | 'EUR' | 'TRY' | 'GBP' | 'CAD' | 'AUD' | 'JPY'
+export type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD'
+
+export interface GeneralSettings {
+  currency: Currency
+  dateFormat: DateFormat
+}
+
+export interface FocusSettings {
+  enabled: boolean
+  nudgeInterval: number // minutes: 15, 30, 60, 90, 120
+}
+
+export interface ScreenshotSettings {
+  enabled: boolean
+  frequency: number // minutes: 5, 10, 15, 30
+  notifyBeforeCapture: boolean
+  blurIntensity: 'off' | 'low' | 'high'
+}
+
+export interface AppSettings {
+  general: GeneralSettings
+  focus: FocusSettings
+  screenshot: ScreenshotSettings
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  general: {
+    currency: 'USD',
+    dateFormat: 'MM/DD/YYYY'
+  },
+  focus: {
+    enabled: true,
+    nudgeInterval: 60
+  },
+  screenshot: {
+    enabled: false,
+    frequency: 10,
+    notifyBeforeCapture: true,
+    blurIntensity: 'off'
+  }
+}
+
+// Database Export/Import types
+export interface DatabaseExport {
+  version: string
+  exportedAt: string
+  data: {
+    projects: ProjectIPC[]
+    clients: ClientIPC[]
+    logs: LogIPC[]
+    expenses: ExpenseIPC[]
+    invoices: InvoiceIPC[]
+    payments: PaymentIPC[]
+    assets: AssetIPC[]
+    screenshots: ScreenshotIPC[]
+  }
+}
+
+// Screenshot types (Phase 10)
+export interface Screenshot {
+  id: string
+  projectId: string
+  logId: string | null
+  filePath: string
+  timestamp: Date
+  createdAt: Date
+}
+
+// IPC-safe version with string dates
+export interface ScreenshotIPC {
+  id: string
+  projectId: string
+  logId: string | null
+  filePath: string
+  timestamp: string
+  createdAt: string
+}

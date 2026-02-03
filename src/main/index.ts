@@ -1,13 +1,18 @@
 // src/main/index.ts
 
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, screen } from 'electron'
 import { join } from 'path'
 import icon from '../../resources/icon.png?asset'
 import { setupIpcHandlers } from './handlers'
 import { initializeDatabase, closeDatabase } from './db/index'
+import * as FocusGuardService from './services/FocusGuardService'
+import * as ScreenshotService from './services/ScreenshotService'
 
 let mainWindow: BrowserWindow | null = null
 let floatingTimerWindow: BrowserWindow | null = null
+let focusWindow: BrowserWindow | null = null
+let screenshotCountdownWindow: BrowserWindow | null = null
+let flashWindow: BrowserWindow | null = null
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -30,6 +35,8 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+    // Set the main window reference for screenshot service
+    ScreenshotService.setMainWindow(mainWindow)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -81,6 +88,8 @@ function createFloatingTimerWindow(): BrowserWindow {
 
   floatingTimerWindow.on('ready-to-show', () => {
     floatingTimerWindow?.show()
+    // The floating window will request initial state via get-timer-state on mount
+    // No need to send it here - avoids race conditions
   })
 
   floatingTimerWindow.on('closed', () => {
@@ -101,6 +110,158 @@ function createFloatingTimerWindow(): BrowserWindow {
   }
 
   return floatingTimerWindow
+}
+
+function createFocusWindow(): BrowserWindow {
+  if (focusWindow && !focusWindow.isDestroyed()) {
+    focusWindow.focus()
+    return focusWindow
+  }
+
+  focusWindow = new BrowserWindow({
+    width: 420,
+    height: 280,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    skipTaskbar: true,
+    show: false,
+    center: true,
+    icon,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  })
+
+  focusWindow.on('ready-to-show', () => {
+    focusWindow?.show()
+    focusWindow?.focus()
+  })
+
+  focusWindow.on('closed', () => {
+    focusWindow = null
+  })
+
+  // Load the focus nudge route
+  if (process.env.ELECTRON_RENDERER_URL) {
+    focusWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}#/focus-nudge`)
+  } else {
+    focusWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+      hash: '/focus-nudge'
+    })
+  }
+
+  return focusWindow
+}
+
+function hideFocusWindow(): void {
+  if (focusWindow && !focusWindow.isDestroyed()) {
+    focusWindow.close()
+    focusWindow = null
+  }
+}
+
+function createScreenshotCountdownWindow(seconds: number): BrowserWindow {
+  if (screenshotCountdownWindow && !screenshotCountdownWindow.isDestroyed()) {
+    screenshotCountdownWindow.focus()
+    // Update countdown time
+    screenshotCountdownWindow.webContents.send('update-countdown', { seconds })
+    return screenshotCountdownWindow
+  }
+
+  screenshotCountdownWindow = new BrowserWindow({
+    width: 420,
+    height: 260,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    skipTaskbar: true,
+    show: false,
+    icon,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  })
+
+  // Position in top-right corner
+  const primaryDisplay = screen.getPrimaryDisplay()
+  const { width } = primaryDisplay.workAreaSize
+  screenshotCountdownWindow.setPosition(width - 440, 20)
+
+  screenshotCountdownWindow.on('ready-to-show', () => {
+    screenshotCountdownWindow?.show()
+    screenshotCountdownWindow?.focus()
+    if (screenshotCountdownWindow && !screenshotCountdownWindow.isDestroyed()) {
+      screenshotCountdownWindow.webContents.send('update-countdown', { seconds })
+    }
+  })
+
+  screenshotCountdownWindow.on('closed', () => {
+    screenshotCountdownWindow = null
+  })
+
+  // Load the screenshot countdown route
+  if (process.env.ELECTRON_RENDERER_URL) {
+    screenshotCountdownWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}#/screenshot-countdown`)
+  } else {
+    screenshotCountdownWindow.loadFile(join(__dirname, '../renderer/index.html'), {
+      hash: '/screenshot-countdown'
+    })
+  }
+
+  return screenshotCountdownWindow
+}
+
+function hideScreenshotCountdownWindow(): void {
+  if (screenshotCountdownWindow && !screenshotCountdownWindow.isDestroyed()) {
+    screenshotCountdownWindow.close()
+    screenshotCountdownWindow = null
+  }
+}
+
+function showCaptureFlash(): void {
+  const display = screen.getPrimaryDisplay()
+  const { width, height } = display.bounds
+
+  flashWindow = new BrowserWindow({
+    width,
+    height,
+    x: 0,
+    y: 0,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    focusable: false,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  })
+
+  // Softer flash with reduced opacity and gray color
+  flashWindow.loadURL(
+    `data:text/html,<html><body style="margin:0;padding:0;background:rgba(220,220,220,0.35);animation:fadeOut 0.3s ease-out forwards;"><style>@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }</style></body></html>`
+  )
+
+  // Auto-close after animation
+  setTimeout(() => {
+    if (flashWindow && !flashWindow.isDestroyed()) {
+      flashWindow.close()
+      flashWindow = null
+    }
+  }, 300)
+}
+
+export function triggerCaptureFlash(): void {
+  showCaptureFlash()
 }
 
 function setupFloatingTimerHandlers(): void {
@@ -139,6 +300,72 @@ function setupFloatingTimerHandlers(): void {
   })
 }
 
+function setupFocusWindowHandlers(): void {
+  // Set the callback for showing focus window
+  FocusGuardService.setShowFocusWindowCallback(() => {
+    createFocusWindow()
+  })
+
+  ipcMain.handle('focus-confirm', () => {
+    FocusGuardService.confirmFocus()
+    hideFocusWindow()
+    return { success: true }
+  })
+
+  ipcMain.handle('focus-stop', async () => {
+    hideFocusWindow()
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('focus-action', 'stop')
+    }
+    return { success: true }
+  })
+
+  ipcMain.handle('focus-switch', async () => {
+    hideFocusWindow()
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('focus-action', 'switch')
+      mainWindow.show()
+      mainWindow.focus()
+    }
+    return { success: true }
+  })
+
+  ipcMain.handle('get-focus-context', () => {
+    return { success: true, data: FocusGuardService.getContext() }
+  })
+}
+
+function setupScreenshotCountdownHandlers(): void {
+  // Set the callback for showing countdown window
+  ScreenshotService.setShowCountdownWindowCallback((seconds) => {
+    createScreenshotCountdownWindow(seconds)
+  })
+
+  ipcMain.handle('screenshot-skip', () => {
+    ScreenshotService.skipPendingCapture()
+    hideScreenshotCountdownWindow()
+    return { success: true }
+  })
+
+  // Listen for screenshot-captured event and reopen timer window
+  ipcMain.on('screenshot-captured-complete', () => {
+    // Only reopen timer if it was previously open or if timer is running
+    if (floatingTimerWindow === null || floatingTimerWindow.isDestroyed()) {
+      // Check if timer is running by querying main window
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('query-timer-state-for-reopen')
+      }
+    }
+  })
+
+  // Handle response from main window about timer state
+  ipcMain.on('timer-state-response-for-reopen', (_, isRunning) => {
+    if (isRunning) {
+      createFloatingTimerWindow()
+    }
+  })
+}
+
 // Export helper function to broadcast timer state to floating window
 export function broadcastTimerStateToFloating(timerState: unknown): void {
   if (floatingTimerWindow && !floatingTimerWindow.isDestroyed()) {
@@ -159,6 +386,8 @@ app.whenReady().then(async () => {
 
   setupIpcHandlers() // Setup IPC handlers after DB is ready
   setupFloatingTimerHandlers() // Setup floating timer handlers
+  setupFocusWindowHandlers() // Setup focus window handlers
+  setupScreenshotCountdownHandlers() // Setup screenshot countdown handlers
 
   // Set app user model id for windows
   if (process.platform === 'win32') {

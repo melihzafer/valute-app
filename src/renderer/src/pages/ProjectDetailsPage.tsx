@@ -11,6 +11,8 @@ import LogList from '../components/LogList'
 import ExpenseList from '../components/ExpenseList'
 import EditProjectForm from '../components/EditProjectForm'
 import { AssetList } from '../components/AssetList'
+import { ScreenshotGallery } from '../components/ScreenshotGallery'
+import { useSettingsStore } from '../store/useSettingsStore'
 import {
   ArrowLeft,
   LayoutDashboard,
@@ -23,10 +25,11 @@ import {
   Receipt,
   FolderOpen,
   Check,
-  Loader2
+  Loader2,
+  Camera
 } from 'lucide-react'
 
-type TabId = 'overview' | 'logs' | 'expenses' | 'notes' | 'assets' | 'settings'
+type TabId = 'overview' | 'logs' | 'expenses' | 'notes' | 'assets' | 'screenshots' | 'settings'
 
 const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -34,6 +37,7 @@ const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'expenses', label: 'Expenses', icon: Receipt },
   { id: 'notes', label: 'Notes', icon: FileText },
   { id: 'assets', label: 'Assets', icon: FolderOpen },
+  { id: 'screenshots', label: 'Screenshots', icon: Camera },
   { id: 'settings', label: 'Settings', icon: Settings }
 ]
 
@@ -551,6 +555,14 @@ const ProjectDetailsPage: React.FC = () => {
           <div className="max-w-2xl">
             <AssetList projectId={project.id} />
           </div>
+        )}
+
+        {/* Screenshots Tab */}
+        {activeTab === 'screenshots' && (
+          <ScreenshotGallery
+            projectId={project.id}
+            blurIntensity={useSettingsStore.getState().settings.screenshot?.blurIntensity ?? 'off'}
+          />
         )}
 
         {/* Settings Tab */}

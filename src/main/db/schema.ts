@@ -128,6 +128,18 @@ export const assets = sqliteTable('assets', {
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
 })
 
+// screenshots: Proof of work screenshots (Phase 10)
+export const screenshots = sqliteTable('screenshots', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  logId: text('log_id').references(() => logs.id, { onDelete: 'set null' }),
+  filePath: text('file_path').notNull(), // Absolute path to screenshot
+  timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
 // Export types for TypeScript
 export type Project = typeof projects.$inferSelect
 export type NewProject = typeof projects.$inferInsert
@@ -155,3 +167,6 @@ export type NewClient = typeof clients.$inferInsert
 
 export type Payment = typeof payments.$inferSelect
 export type NewPayment = typeof payments.$inferInsert
+
+export type Screenshot = typeof screenshots.$inferSelect
+export type NewScreenshot = typeof screenshots.$inferInsert

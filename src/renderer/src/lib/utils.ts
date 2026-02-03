@@ -5,10 +5,34 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Currency-specific locale mapping for proper formatting
+const CURRENCY_LOCALES: Record<string, string> = {
+  USD: 'en-US',
+  EUR: 'de-DE',
+  TRY: 'tr-TR',
+  GBP: 'en-GB',
+  CAD: 'en-CA',
+  AUD: 'en-AU',
+  JPY: 'ja-JP'
+}
+
 // Utility function for currency formatting
-export const formatCurrency = (amount: number, currency: string = 'USD'): string => {
-  return new Intl.NumberFormat(undefined, {
-    // Use undefined for system default locale
+// Accepts amount in cents and converts to proper currency display
+export const formatCurrency = (amountCents: number, currency: string = 'USD'): string => {
+  const locale = CURRENCY_LOCALES[currency] || 'en-US'
+  const amount = amountCents / 100 // Convert cents to dollars/euros/etc.
+
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency
+  }).format(amount)
+}
+
+// Legacy version for components that pass already-converted amounts
+export const formatCurrencyRaw = (amount: number, currency: string = 'USD'): string => {
+  const locale = CURRENCY_LOCALES[currency] || 'en-US'
+
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency
   }).format(amount)

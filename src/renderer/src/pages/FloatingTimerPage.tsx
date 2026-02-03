@@ -55,7 +55,8 @@ const FloatingTimerPage: React.FC = () => {
     return cleanup
   }, [])
 
-  // Update elapsed time locally when running
+  // Update elapsed time locally when running for smooth display
+  // Calculate from authoritative startTime and accumulatedTime
   useEffect(() => {
     if (!timerState.isRunning || !timerState.startTime) return
 
@@ -66,10 +67,23 @@ const FloatingTimerPage: React.FC = () => {
         ...prev,
         elapsedSeconds: prev.accumulatedTime + elapsed
       }))
-    }, 1000)
+    }, 100) // Update more frequently for smoother display
 
     return () => clearInterval(interval)
   }, [timerState.isRunning, timerState.startTime, timerState.accumulatedTime])
+
+  // Periodically request fresh state to prevent drift
+  useEffect(() => {
+    const syncInterval = setInterval(() => {
+      window.api.getTimerState().then((response) => {
+        if (response.success && response.data) {
+          setTimerState(response.data)
+        }
+      })
+    }, 5000) // Sync with server every 5 seconds
+
+    return () => clearInterval(syncInterval)
+  }, [])
 
   const handlePause = () => {
     window.api.sendFloatingTimerAction('pause')
@@ -93,7 +107,7 @@ const FloatingTimerPage: React.FC = () => {
     <div className="h-screen w-screen overflow-hidden select-none">
       {/* Draggable window with rounded corners */}
       <div
-        className="h-full w-full bg-zinc-900/95 backdrop-blur-xl rounded-2xl border border-zinc-700/50 shadow-2xl flex flex-col"
+        className="h-full w-full bg-zinc-900/95 backdrop-blur-xl shadow-2xl flex flex-col"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
         {/* Header - Draggable */}
@@ -134,6 +148,7 @@ const FloatingTimerPage: React.FC = () => {
             <button
               onClick={handlePause}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700/50 hover:bg-zinc-600/50 rounded-lg text-xs text-white transition-colors"
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             >
               <Pause className="h-3 w-3" />
               Pause
@@ -142,6 +157,7 @@ const FloatingTimerPage: React.FC = () => {
             <button
               onClick={handleResume}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/80 hover:bg-emerald-500/80 rounded-lg text-xs text-white transition-colors"
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             >
               <Play className="h-3 w-3" />
               Resume
@@ -150,6 +166,7 @@ const FloatingTimerPage: React.FC = () => {
           <button
             onClick={handleStop}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 rounded-lg text-xs text-red-400 transition-colors"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
             <Square className="h-3 w-3" />
             Stop

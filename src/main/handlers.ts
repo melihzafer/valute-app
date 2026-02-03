@@ -45,7 +45,11 @@ import { createAsset, getAssetsByProject, deleteAsset, openAsset } from './servi
 import * as DashboardService from './services/DashboardService'
 import * as ClientService from './services/ClientService'
 import * as PaymentService from './services/PaymentService'
-import type { AssetIPC } from '../shared/types'
+import * as SettingsService from './services/SettingsService'
+import * as DataService from './services/DataService'
+import * as ScreenshotService from './services/ScreenshotService'
+import * as FocusGuardService from './services/FocusGuardService'
+import type { AssetIPC, AppSettings, DatabaseExport, ScreenshotIPC } from '../shared/types'
 
 // Timer state stored in memory (could be persisted if needed)
 let timerState: TimerState = {
@@ -424,7 +428,16 @@ export function setupIpcHandlers() {
   // --- Timer Handlers ---
 
   ipcMain.handle('get-timer-state', async (): Promise<IPCResponse<TimerState>> => {
-    return { success: true, data: timerState }
+    // Calculate current elapsed seconds if timer is running
+    const currentState = { ...timerState }
+    if (currentState.isRunning && currentState.startTime) {
+      const now = Date.now()
+      const elapsed = Math.floor((now - currentState.startTime) / 1000)
+      currentState.elapsedSeconds = currentState.accumulatedTime + elapsed
+    } else {
+      currentState.elapsedSeconds = currentState.accumulatedTime
+    }
+    return { success: true, data: currentState }
   })
 
   ipcMain.handle('set-timer-state', async (_, state: TimerState): Promise<IPCResponse<void>> => {
@@ -446,6 +459,16 @@ export function setupIpcHandlers() {
         description: description || null,
         currentProjectName: project?.name || null
       }
+
+      // Start screenshot scheduling if enabled
+      ScreenshotService.scheduleNextCapture(projectId, null)
+
+      // Start focus tracking for nudge reminders
+      FocusGuardService.startFocusTracking(project?.name || 'Unknown Project')
+
+      // Broadcast the started state to floating window
+      broadcastTimerStateToFloating(timerState)
+
       return { success: true, data: timerState }
     }
   )
@@ -459,6 +482,15 @@ export function setupIpcHandlers() {
         accumulatedTime: timerState.accumulatedTime + elapsed,
         startTime: null
       }
+
+      // Cancel screenshot scheduling when paused
+      ScreenshotService.cancelScheduledCapture()
+
+      // Pause focus tracking
+      FocusGuardService.pauseFocusTracking()
+
+      // Broadcast the paused state to floating window
+      broadcastTimerStateToFloating(timerState)
     }
     return { success: true, data: timerState }
   })
@@ -470,12 +502,29 @@ export function setupIpcHandlers() {
         isRunning: true,
         startTime: Date.now()
       }
+
+      // Resume screenshot scheduling if enabled
+      if (timerState.projectId) {
+        ScreenshotService.scheduleNextCapture(timerState.projectId, null)
+      }
+
+      // Resume focus tracking
+      FocusGuardService.resumeFocusTracking(timerState.currentProjectName || 'Unknown Project')
+
+      // Broadcast the resumed state to floating window
+      broadcastTimerStateToFloating(timerState)
     }
     return { success: true, data: timerState }
   })
 
   ipcMain.handle('stop-timer', async (): Promise<IPCResponse<TimerState>> => {
     const finalState = { ...timerState }
+
+    // Cancel screenshot scheduling when timer stops
+    ScreenshotService.cancelScheduledCapture()
+
+    // Stop focus tracking
+    FocusGuardService.stopFocusTracking()
 
     // Calculate total duration
     let totalDuration = timerState.accumulatedTime
@@ -1064,4 +1113,184 @@ export function setupIpcHandlers() {
       return { success: false, error: message }
     }
   })
+
+  // --- Settings Handlers ---
+
+  ipcMain.handle('get-all-settings', async (): Promise<IPCResponse<AppSettings>> => {
+    try {
+      const settings = await SettingsService.getAllSettings()
+      return { success: true, data: settings }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to get settings'
+      console.error('Error in get-all-settings IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle(
+    'get-setting',
+    async (_, key: string): Promise<IPCResponse<string | null>> => {
+      try {
+        const value = await SettingsService.getSetting(key)
+        return { success: true, data: value }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to get setting'
+        console.error('Error in get-setting IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'set-setting',
+    async (_, key: string, value: string): Promise<IPCResponse<void>> => {
+      try {
+        await SettingsService.setSetting(key, value)
+        return { success: true }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to set setting'
+        console.error('Error in set-setting IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'set-settings',
+    async (_, settingsData: Partial<AppSettings>): Promise<IPCResponse<void>> => {
+      try {
+        await SettingsService.setSettings(settingsData)
+        return { success: true }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to save settings'
+        console.error('Error in set-settings IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  // --- Data Export/Import Handlers ---
+
+  ipcMain.handle('export-database', async (): Promise<IPCResponse<DatabaseExport>> => {
+    try {
+      const data = await DataService.exportDatabase()
+      return { success: true, data }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to export database'
+      console.error('Error in export-database IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle(
+    'import-database',
+    async (_, data: DatabaseExport): Promise<IPCResponse<{ counts: Record<string, number> }>> => {
+      try {
+        const result = await DataService.importDatabase(data)
+        return { success: true, data: { counts: result.counts } }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to import database'
+        console.error('Error in import-database IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  // --- Screenshot Handlers (Phase 10) ---
+
+  ipcMain.handle(
+    'get-screenshots-by-project',
+    async (_, projectId: string): Promise<IPCResponse<ScreenshotIPC[]>> => {
+      try {
+        const screenshots = await ScreenshotService.getScreenshotsByProject(projectId)
+        return { success: true, data: screenshots }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to get screenshots'
+        console.error('Error in get-screenshots-by-project IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'delete-screenshot',
+    async (_, id: string, deductTime: boolean = false): Promise<IPCResponse<void>> => {
+      try {
+        await ScreenshotService.deleteScreenshot(id, deductTime)
+        return { success: true }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to delete screenshot'
+        console.error('Error in delete-screenshot IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle('capture-screenshot-now', async (): Promise<IPCResponse<ScreenshotIPC>> => {
+    try {
+      if (!timerState.projectId) {
+        return { success: false, error: 'No active timer' }
+      }
+      const screenshot = await ScreenshotService.captureScreen(timerState.projectId, null)
+      return { success: true, data: screenshot }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to capture screenshot'
+      console.error('Error in capture-screenshot-now IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle('skip-pending-capture', async (): Promise<IPCResponse<void>> => {
+    try {
+      ScreenshotService.skipPendingCapture()
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to skip capture'
+      console.error('Error in skip-pending-capture IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle(
+    'get-screenshot-image',
+    async (_, filePath: string): Promise<IPCResponse<string>> => {
+      try {
+        const base64 = await ScreenshotService.getScreenshotImage(filePath)
+        return { success: true, data: base64 }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to read screenshot'
+        console.error('Error in get-screenshot-image IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  // Export screenshot handlers
+  ipcMain.handle(
+    'export-screenshot',
+    async (_, filePath: string, destinationPath?: string): Promise<IPCResponse<string>> => {
+      try {
+        const exportedPath = await ScreenshotService.exportScreenshot(filePath, destinationPath)
+        return { success: true, data: exportedPath }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to export screenshot'
+        console.error('Error in export-screenshot IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'export-all-screenshots',
+    async (_, projectId: string): Promise<IPCResponse<{ count: number; folder: string }>> => {
+      try {
+        const result = await ScreenshotService.exportAllScreenshots(projectId)
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to export screenshots'
+        console.error('Error in export-all-screenshots IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
 }

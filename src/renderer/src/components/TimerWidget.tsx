@@ -94,14 +94,13 @@ const TimerWidget: React.FC<TimerWidgetProps> = ({
   const handlePopOut = async () => {
     await window.api.openFloatingTimer()
     setIsFloating(true)
-    // Send initial state to floating window
-    setTimeout(() => {
-      window.api.syncTimerToFloating({
-        ...timerState,
-        hourlyRate,
-        currency
-      } as TimerState)
-    }, 500)
+    // Floating window will request initial state via get-timer-state on mount
+    // But we still sync for immediate updates
+    window.api.syncTimerToFloating({
+      ...timerState,
+      hourlyRate,
+      currency
+    } as TimerState)
   }
 
   const handlePopIn = async () => {

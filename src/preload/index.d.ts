@@ -14,7 +14,10 @@ import type {
   PaymentIPC,
   ClientBalance,
   ClientWithBalance,
-  LedgerEntry
+  LedgerEntry,
+  AppSettings,
+  DatabaseExport,
+  ScreenshotIPC
 } from '../shared/types'
 
 interface API {
@@ -123,6 +126,45 @@ interface API {
   createPayment: (data: Omit<PaymentIPC, 'id' | 'createdAt'>) => Promise<IPCResponse<PaymentIPC>>
   updatePayment: (id: string, data: Partial<Omit<PaymentIPC, 'createdAt'>>) => Promise<IPCResponse<PaymentIPC>>
   deletePayment: (id: string) => Promise<IPCResponse<void>>
+
+  // Settings
+  getAllSettings: () => Promise<IPCResponse<AppSettings>>
+  getSetting: (key: string) => Promise<IPCResponse<string | null>>
+  setSetting: (key: string, value: string) => Promise<IPCResponse<void>>
+  setSettings: (settings: Partial<AppSettings>) => Promise<IPCResponse<void>>
+
+  // Data Export/Import
+  exportDatabase: () => Promise<IPCResponse<DatabaseExport>>
+  importDatabase: (data: DatabaseExport) => Promise<IPCResponse<{ counts: Record<string, number> }>>
+
+  // Screenshots (Phase 10)
+  getScreenshotsByProject: (projectId: string) => Promise<IPCResponse<ScreenshotIPC[]>>
+  deleteScreenshot: (id: string, deductTime?: boolean) => Promise<IPCResponse<void>>
+  captureScreenshotNow: () => Promise<IPCResponse<ScreenshotIPC>>
+  skipPendingCapture: () => Promise<IPCResponse<void>>
+  getScreenshotImage: (filePath: string) => Promise<IPCResponse<string>>
+  onScreenshotCountdownStart: (callback: (data: { seconds: number }) => void) => () => void
+  onScreenshotCaptured: (callback: () => void) => () => void
+  onScreenshotCountdownCancelled: (callback: () => void) => () => void
+
+  // Focus Guard (Phase 9.5)
+  focusConfirm: () => Promise<IPCResponse<void>>
+  focusStop: () => Promise<IPCResponse<void>>
+  focusSwitch: () => Promise<IPCResponse<void>>
+  getFocusContext: () => Promise<IPCResponse<{ projectName: string; elapsedSeconds: number }>>
+  onFocusAction: (callback: (action: 'stop' | 'switch') => void) => () => void
+
+  // Screenshot countdown (Phase 10 - Floating Window)
+  screenshotSkip: () => Promise<IPCResponse<void>>
+  onScreenshotCountdown: (callback: (data: { seconds: number }) => void) => () => void
+
+  // Screenshot export
+  exportScreenshot: (filePath: string, destinationPath?: string) => Promise<IPCResponse<string>>
+  exportAllScreenshots: (projectId: string) => Promise<IPCResponse<{ count: number; folder: string }>>
+
+  // Timer state query for auto-reopen after screenshot
+  onQueryTimerStateForReopen: (callback: () => void) => () => void
+  sendTimerStateForReopen: (isRunning: boolean) => void
 }
 
 declare global {
