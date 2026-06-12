@@ -10,6 +10,13 @@ import ProjectDetailsPage from './pages/ProjectDetailsPage'
 import ClientsPage from './pages/ClientsPage'
 import ClientDetailsPage from './pages/ClientDetailsPage'
 import ReportsPage from './pages/ReportsPage'
+import IdeasPage from './pages/IdeasPage'
+import LifePage from './pages/LifePage'
+import PlannerPage from './pages/PlannerPage'
+import UniversityPage from './pages/UniversityPage'
+import JournalPage from './pages/JournalPage'
+import NotesPage from './pages/NotesPage'
+import HobbiesPage from './pages/HobbiesPage'
 import SettingsPage from './pages/SettingsPage'
 import FloatingTimerPage from './pages/FloatingTimerPage'
 import FocusNudgePage from './pages/FocusNudgePage'
@@ -44,12 +51,19 @@ function App() {
 
         {/* Main app routes with layout */}
         <Route path="/" element={<Layout />}>
-          <Route index element={<DashboardPage />} />
+          <Route index element={<LifePage />} />
+          <Route path="finance" element={<DashboardPage />} />
+          <Route path="planner" element={<PlannerPage />} />
+          <Route path="university" element={<UniversityPage />} />
+          <Route path="journal" element={<JournalPage />} />
+          <Route path="notes" element={<NotesPage />} />
+          <Route path="hobbies" element={<HobbiesPage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/:id" element={<ProjectDetailsPage />} />
           <Route path="clients" element={<ClientsPage />} />
           <Route path="clients/:id" element={<ClientDetailsPage />} />
           <Route path="reports" element={<ReportsPage />} />
+          <Route path="ideas" element={<IdeasPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

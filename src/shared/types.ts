@@ -88,6 +88,8 @@ export interface Project {
   currency: string
   unitName?: string // For UNIT_BASED: "Page", "Article", "Video", etc.
   status: 'active' | 'archived'
+  workflowStatus?: 'active' | 'on_hold' | 'done' // Lifecycle, independent of archived
+  category?: ProjectCategory // M6: work | hobby | personal
   notes?: string // The Canvas - persistent project notes
   createdAt: Date
 }
@@ -104,6 +106,8 @@ export interface ProjectIPC {
   currency: string
   unitName?: string
   status: 'active' | 'archived'
+  workflowStatus?: 'active' | 'on_hold' | 'done'
+  category?: ProjectCategory // M6: work | hobby | personal
   notes?: string
   createdAt: string
 }
@@ -245,6 +249,191 @@ export interface AssetIPC {
   path: string
   type: 'folder' | 'file' | 'link'
   createdAt: string
+}
+
+// Daily Report (end-of-day "what I did" capture, also written to disk as .md)
+export interface DailyReportIPC {
+  id: string
+  projectId: string
+  reportDate: string
+  content: string
+  filePath: string | null
+  createdAt: string
+}
+
+// Idea (Brainstorm space)
+export type IdeaStatus = 'spark' | 'exploring' | 'parked' | 'promoted'
+
+export interface IdeaIPC {
+  id: string
+  title: string
+  body: string | null
+  tags: string[]
+  status: IdeaStatus
+  promotedProjectId: string | null
+  createdAt: string
+}
+
+// ============================================================
+// Life-OS domains (M3, M5, M6, M7, M8)
+// ============================================================
+
+export type LifeArea = 'work' | 'uni' | 'health' | 'psychology' | 'hobby' | 'money' | 'general'
+
+export type ProjectCategory = 'work' | 'hobby' | 'personal'
+
+// M7 — Notes
+export interface NoteIPC {
+  id: string
+  title: string
+  content: string | null
+  area: LifeArea
+  tags: string[]
+  pinned: boolean
+  projectId: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+// M8 — Tasks
+export type TaskStatus = 'todo' | 'doing' | 'done'
+export type TaskPriority = 'low' | 'medium' | 'high'
+
+export interface TaskIPC {
+  id: string
+  title: string
+  notes: string | null
+  status: TaskStatus
+  priority: TaskPriority
+  area: LifeArea
+  dueDate: string | null
+  projectId: string | null
+  goalId: string | null
+  sortOrder: number
+  createdAt: string
+  completedAt: string | null
+}
+
+// M8 — Goals
+export type GoalStatus = 'active' | 'done' | 'archived'
+
+export interface GoalIPC {
+  id: string
+  title: string
+  description: string | null
+  area: LifeArea
+  targetValue: number
+  currentValue: number
+  unit: string | null
+  dueDate: string | null
+  status: GoalStatus
+  createdAt: string
+}
+
+// M8 — Habits
+export interface HabitIPC {
+  id: string
+  name: string
+  area: LifeArea
+  color: string
+  schedule: string
+  archived: boolean
+  createdAt: string
+  // computed
+  doneToday?: boolean
+  streak?: number
+  last7?: boolean[] // most-recent-last completion flags for last 7 days
+}
+
+// M3 — University
+export interface CourseIPC {
+  id: string
+  name: string
+  code: string | null
+  instructor: string | null
+  credits: number | null
+  semester: string | null
+  color: string
+  archived: boolean
+  createdAt: string
+  // computed
+  assignmentCount?: number
+  openCount?: number
+  currentGrade?: number | null // weighted grade so far
+}
+
+export type AssignmentStatus = 'todo' | 'doing' | 'done'
+
+export interface AssignmentIPC {
+  id: string
+  courseId: string
+  title: string
+  notes: string | null
+  dueDate: string | null
+  status: AssignmentStatus
+  grade: number | null
+  weight: number | null
+  createdAt: string
+}
+
+// M5 — Mood Journal
+export interface MoodEntryIPC {
+  id: string
+  date: string // YYYY-MM-DD
+  mood: number // 1-5
+  energy: number | null
+  stress: number | null
+  note: string | null
+  gratitude: string | null
+  createdAt: string
+}
+
+// M1/M2 — Life Dashboard aggregation
+export interface LifeOverview {
+  tasksDueToday: number
+  tasksOverdue: number
+  habitsDoneToday: number
+  habitsTotal: number
+  assignmentsDueSoon: number // next 7 days, not done
+  activeGoals: number
+  moodLoggedToday: boolean
+  avgMood7: number | null // average mood last 7 days (1-5)
+  earningsThisMonth: number // cents
+  hoursThisWeek: number // seconds actually
+  activeProjects: number
+}
+
+export interface LifeStats {
+  // time series for last N days
+  moodSeries: { date: string; mood: number | null }[]
+  taskCompletion: { date: string; completed: number }[]
+  habitConsistency: { date: string; ratio: number }[] // 0..1
+  hoursByArea: { area: string; seconds: number }[]
+  // headline numbers
+  tasksCompleted: number
+  habitCompletionRate: number // 0..1 over range
+  bestHabitStreak: number
+  avgMood: number | null
+}
+
+// Time Report (1d / 1w / 1m aggregation across projects)
+export interface TimeReportRow {
+  projectId: string
+  projectName: string
+  currency: string
+  totalSeconds: number
+  billableCents: number
+  unbilledCents: number
+  logCount: number
+}
+
+export interface TimeReport {
+  startDate: string // ISO
+  endDate: string // ISO
+  totalSeconds: number
+  totalBillableCents: number
+  activeProjectCount: number // projects with logged time in range
+  rows: TimeReportRow[]
 }
 
 // Dashboard types

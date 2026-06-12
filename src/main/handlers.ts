@@ -49,7 +49,24 @@ import * as SettingsService from './services/SettingsService'
 import * as DataService from './services/DataService'
 import * as ScreenshotService from './services/ScreenshotService'
 import * as FocusGuardService from './services/FocusGuardService'
-import type { AssetIPC, AppSettings, DatabaseExport, ScreenshotIPC } from '../shared/types'
+import * as DailyReportService from './services/DailyReportService'
+import * as ReportService from './services/ReportService'
+import * as IdeaService from './services/IdeaService'
+import * as NotesService from './services/NotesService'
+import * as TaskService from './services/TaskService'
+import * as UniversityService from './services/UniversityService'
+import * as MoodService from './services/MoodService'
+import * as LifeService from './services/LifeService'
+import type {
+  AssetIPC,
+  AppSettings,
+  DatabaseExport,
+  ScreenshotIPC,
+  DailyReportIPC,
+  TimeReport,
+  IdeaIPC,
+  IdeaStatus
+} from '../shared/types'
 
 // Timer state stored in memory (could be persisted if needed)
 let timerState: TimerState = {
@@ -771,6 +788,274 @@ export function setupIpcHandlers() {
     }
   )
 
+  // --- Daily Report Handlers ---
+
+  const toDailyReportIPC = (r: {
+    id: string
+    projectId: string
+    reportDate: Date | null
+    content: string
+    filePath: string | null
+    createdAt: Date | null
+  }): DailyReportIPC => ({
+    id: r.id,
+    projectId: r.projectId,
+    reportDate: r.reportDate instanceof Date ? r.reportDate.toISOString() : String(r.reportDate),
+    content: r.content,
+    filePath: r.filePath,
+    createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt)
+  })
+
+  ipcMain.handle(
+    'save-daily-report',
+    async (
+      _,
+      projectId: string,
+      content: string,
+      reportDate?: string
+    ): Promise<IPCResponse<DailyReportIPC>> => {
+      try {
+        const report = await DailyReportService.saveReport(
+          projectId,
+          content,
+          reportDate ? new Date(reportDate) : undefined
+        )
+        return { success: true, data: toDailyReportIPC(report) }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to save daily report'
+        console.error('Error in save-daily-report IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'get-daily-reports',
+    async (_, projectId: string): Promise<IPCResponse<DailyReportIPC[]>> => {
+      try {
+        const reports = await DailyReportService.listReports(projectId)
+        return { success: true, data: reports.map(toDailyReportIPC) }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch daily reports'
+        console.error('Error in get-daily-reports IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle('delete-daily-report', async (_, id: string): Promise<IPCResponse<void>> => {
+    try {
+      await DailyReportService.deleteReport(id)
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete daily report'
+      console.error('Error in delete-daily-report IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle(
+    'open-daily-report-file',
+    async (_, filePath: string): Promise<IPCResponse<void>> => {
+      try {
+        const result = await shell.openPath(filePath)
+        if (result) {
+          return { success: false, error: result }
+        }
+        return { success: true }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to open report file'
+        console.error('Error in open-daily-report-file IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  // --- Time Report Handlers ---
+
+  ipcMain.handle(
+    'get-time-report',
+    async (_, startDate: string, endDate: string): Promise<IPCResponse<TimeReport>> => {
+      try {
+        const start = new Date(startDate)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(endDate)
+        end.setHours(23, 59, 59, 999)
+        const report = await ReportService.getTimeReport(start, end)
+        return { success: true, data: report }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to build time report'
+        console.error('Error in get-time-report IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  // Generic export: write a string (e.g. markdown) or binary (e.g. PDF) to a user-chosen path.
+  ipcMain.handle(
+    'save-export-file',
+    async (
+      _,
+      defaultPath: string,
+      data: string | ArrayBuffer,
+      filters?: Array<{ name: string; extensions: string[] }>
+    ): Promise<IPCResponse<string | null>> => {
+      try {
+        const result = await dialog.showSaveDialog({
+          title: 'Export',
+          defaultPath,
+          filters
+        })
+        if (result.canceled || !result.filePath) {
+          return { success: true, data: null }
+        }
+        if (typeof data === 'string') {
+          fs.writeFileSync(result.filePath, data, 'utf-8')
+        } else {
+          fs.writeFileSync(result.filePath, Buffer.from(data))
+        }
+        return { success: true, data: result.filePath }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to export file'
+        console.error('Error in save-export-file IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  // --- Idea (Brainstorm) Handlers ---
+
+  ipcMain.handle('get-ideas', async (): Promise<IPCResponse<IdeaIPC[]>> => {
+    try {
+      const data = await IdeaService.getIdeas()
+      return { success: true, data }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch ideas'
+      console.error('Error in get-ideas IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle(
+    'create-idea',
+    async (
+      _,
+      data: { title: string; body?: string | null; tags?: string[]; status?: IdeaStatus }
+    ): Promise<IPCResponse<IdeaIPC>> => {
+      try {
+        const idea = await IdeaService.createIdea(data)
+        return { success: true, data: idea }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to create idea'
+        console.error('Error in create-idea IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'update-idea',
+    async (
+      _,
+      id: string,
+      data: { title?: string; body?: string | null; tags?: string[]; status?: IdeaStatus }
+    ): Promise<IPCResponse<IdeaIPC>> => {
+      try {
+        const idea = await IdeaService.updateIdea(id, data)
+        return { success: true, data: idea }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to update idea'
+        console.error('Error in update-idea IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle('delete-idea', async (_, id: string): Promise<IPCResponse<void>> => {
+    try {
+      await IdeaService.deleteIdea(id)
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to delete idea'
+      console.error('Error in delete-idea IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle(
+    'promote-idea',
+    async (_, id: string): Promise<IPCResponse<{ projectId: string }>> => {
+      try {
+        const result = await IdeaService.promoteIdea(id)
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to promote idea'
+        console.error('Error in promote-idea IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  // --- Life-OS Handlers (M1/M2/M3/M5/M7/M8) ---
+  // Compact wrapper: registers a channel and wraps the call in the standard IPCResponse envelope.
+  const reg = <T>(channel: string, fn: (...args: any[]) => Promise<T> | T): void => {
+    ipcMain.handle(channel, async (_event, ...args: any[]): Promise<IPCResponse<T>> => {
+      try {
+        const data = await fn(...args)
+        return { success: true, data }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : `Failed: ${channel}`
+        console.error(`Error in ${channel} IPC handler:`, error)
+        return { success: false, error: message }
+      }
+    })
+  }
+
+  // M7 Notes
+  reg('get-notes', () => NotesService.getNotes())
+  reg('create-note', (data) => NotesService.createNote(data))
+  reg('update-note', (id, data) => NotesService.updateNote(id, data))
+  reg('delete-note', (id) => NotesService.deleteNote(id))
+
+  // M8 Tasks
+  reg('get-tasks', () => TaskService.getTasks())
+  reg('create-task', (data) => TaskService.createTask(data))
+  reg('update-task', (id, data) => TaskService.updateTask(id, data))
+  reg('delete-task', (id) => TaskService.deleteTask(id))
+
+  // M8 Goals
+  reg('get-goals', () => TaskService.getGoals())
+  reg('create-goal', (data) => TaskService.createGoal(data))
+  reg('update-goal', (id, data) => TaskService.updateGoal(id, data))
+  reg('delete-goal', (id) => TaskService.deleteGoal(id))
+
+  // M8 Habits
+  reg('get-habits', () => TaskService.getHabits())
+  reg('create-habit', (data) => TaskService.createHabit(data))
+  reg('update-habit', (id, data) => TaskService.updateHabit(id, data))
+  reg('delete-habit', (id) => TaskService.deleteHabit(id))
+  reg('toggle-habit', (id, date) => TaskService.toggleHabit(id, date))
+
+  // M3 University
+  reg('get-courses', () => UniversityService.getCourses())
+  reg('create-course', (data) => UniversityService.createCourse(data))
+  reg('update-course', (id, data) => UniversityService.updateCourse(id, data))
+  reg('delete-course', (id) => UniversityService.deleteCourse(id))
+  reg('get-assignments', (courseId) => UniversityService.getAssignments(courseId))
+  reg('create-assignment', (data) => UniversityService.createAssignment(data))
+  reg('update-assignment', (id, data) => UniversityService.updateAssignment(id, data))
+  reg('delete-assignment', (id) => UniversityService.deleteAssignment(id))
+  reg('get-gpa', () => UniversityService.getGpa())
+
+  // M5 Mood Journal
+  reg('get-mood-entries', () => MoodService.getMoodEntries())
+  reg('save-mood-entry', (data) => MoodService.saveMoodEntry(data))
+  reg('delete-mood-entry', (id) => MoodService.deleteMoodEntry(id))
+
+  // M1/M2 Life dashboard + stats
+  reg('get-life-overview', () => LifeService.getLifeOverview())
+  reg('get-life-stats', (days) => LifeService.getLifeStats(days))
+
   // --- File/Folder Dialog Handler ---
 
   ipcMain.handle(
@@ -880,7 +1165,8 @@ export function setupIpcHandlers() {
         const clients = await ClientService.getClientsWithBalances()
         return { success: true, data: clients }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Failed to fetch clients with balances'
+        const message =
+          error instanceof Error ? error.message : 'Failed to fetch clients with balances'
         console.error('Error in get-clients-with-balances IPC handler:', error)
         return { success: false, error: message }
       }
@@ -898,7 +1184,9 @@ export function setupIpcHandlers() {
         const result: ClientIPC = {
           ...client,
           createdAt:
-            client.createdAt instanceof Date ? client.createdAt.toISOString() : String(client.createdAt)
+            client.createdAt instanceof Date
+              ? client.createdAt.toISOString()
+              : String(client.createdAt)
         }
         return { success: true, data: result }
       } catch (error: unknown) {
@@ -1012,16 +1300,19 @@ export function setupIpcHandlers() {
     }
   )
 
-  ipcMain.handle('migrate-client-names', async (): Promise<IPCResponse<{ created: number; linked: number }>> => {
-    try {
-      const result = await ClientService.migrateClientNames()
-      return { success: true, data: result }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to migrate client names'
-      console.error('Error in migrate-client-names IPC handler:', error)
-      return { success: false, error: message }
+  ipcMain.handle(
+    'migrate-client-names',
+    async (): Promise<IPCResponse<{ created: number; linked: number }>> => {
+      try {
+        const result = await ClientService.migrateClientNames()
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to migrate client names'
+        console.error('Error in migrate-client-names IPC handler:', error)
+        return { success: false, error: message }
+      }
     }
-  })
+  )
 
   // --- Payment Handlers ---
 
@@ -1046,7 +1337,10 @@ export function setupIpcHandlers() {
 
   ipcMain.handle(
     'create-payment',
-    async (_, paymentData: Omit<PaymentIPC, 'id' | 'createdAt'>): Promise<IPCResponse<PaymentIPC>> => {
+    async (
+      _,
+      paymentData: Omit<PaymentIPC, 'id' | 'createdAt'>
+    ): Promise<IPCResponse<PaymentIPC>> => {
       try {
         const parsedData = {
           ...paymentData,
@@ -1055,7 +1349,10 @@ export function setupIpcHandlers() {
         const newPayment = await PaymentService.createPayment(parsedData)
         const result: PaymentIPC = {
           ...newPayment,
-          date: newPayment.date instanceof Date ? newPayment.date.toISOString() : String(newPayment.date),
+          date:
+            newPayment.date instanceof Date
+              ? newPayment.date.toISOString()
+              : String(newPayment.date),
           createdAt:
             newPayment.createdAt instanceof Date
               ? newPayment.createdAt.toISOString()
@@ -1127,19 +1424,16 @@ export function setupIpcHandlers() {
     }
   })
 
-  ipcMain.handle(
-    'get-setting',
-    async (_, key: string): Promise<IPCResponse<string | null>> => {
-      try {
-        const value = await SettingsService.getSetting(key)
-        return { success: true, data: value }
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : 'Failed to get setting'
-        console.error('Error in get-setting IPC handler:', error)
-        return { success: false, error: message }
-      }
+  ipcMain.handle('get-setting', async (_, key: string): Promise<IPCResponse<string | null>> => {
+    try {
+      const value = await SettingsService.getSetting(key)
+      return { success: true, data: value }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to get setting'
+      console.error('Error in get-setting IPC handler:', error)
+      return { success: false, error: message }
     }
-  )
+  })
 
   ipcMain.handle(
     'set-setting',

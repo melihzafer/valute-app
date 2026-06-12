@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { CalendarDays, FileText, Filter, X } from 'lucide-react'
 import LogList from '../components/LogList'
+import TimeReportSection from '../components/TimeReportSection'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -209,8 +210,11 @@ const ReportsPage: React.FC = () => {
     <div className="p-8 w-full max-w-7xl mx-auto">
       <h1 className="text-4xl font-bold text-foreground mb-8">Reports</h1>
 
+      {/* 1d / 1w / 1m time report with summary cards, breakdown, and PDF/MD export */}
+      <TimeReportSection />
+
       <section className="mb-8 p-6 bg-card border border-border rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-foreground mb-4">Generate Report</h2>
+        <h2 className="text-2xl font-semibold text-foreground mb-4">Generate Invoice from Logs</h2>
         {reportError && (
           <div
             className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"

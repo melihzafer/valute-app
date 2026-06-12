@@ -17,7 +17,8 @@ export async function getProjects(): Promise<Project[]> {
   return result.map((project) => ({
     ...project,
     pricingModel: project.type as any,
-    status: project.archived ? 'archived' : 'active'
+    status: project.archived ? 'archived' : 'active',
+    workflowStatus: (project.workflowStatus as any) || 'active'
   })) as Project[]
 }
 
@@ -38,6 +39,8 @@ export async function createProject(
     fixedPrice: projectData.fixedPrice || null,
     unitName: projectData.unitName || null,
     archived: projectData.status === 'archived' ? 1 : 0,
+    workflowStatus: (projectData as any).workflowStatus || 'active',
+    category: (projectData as any).category || 'work', // M6: work | hobby | personal
     assetsPath: null, // Optional field
     createdAt: new Date()
   }
@@ -50,7 +53,8 @@ export async function createProject(
   return {
     ...newProject,
     pricingModel: newProject.type as any,
-    status: newProject.archived ? 'archived' : 'active'
+    status: newProject.archived ? 'archived' : 'active',
+    workflowStatus: newProject.workflowStatus as any
   } as Project
 }
 
@@ -70,6 +74,8 @@ export async function updateProject(
     hourlyRate: projectData.hourlyRate,
     fixedPrice: projectData.fixedPrice,
     unitName: projectData.unitName,
+    workflowStatus: (projectData as any).workflowStatus, // Lifecycle status
+    category: (projectData as any).category, // M6 life-area category
     notes: projectData.notes // Include notes field for The Canvas
   }
 
@@ -97,7 +103,8 @@ export async function updateProject(
   return {
     ...updated,
     pricingModel: updated.type as any,
-    status: updated.archived ? 'archived' : 'active'
+    status: updated.archived ? 'archived' : 'active',
+    workflowStatus: (updated.workflowStatus as any) || 'active'
   } as Project
 }
 
@@ -280,6 +287,7 @@ export async function getProjectById(id: string): Promise<Project | null> {
   return {
     ...result,
     pricingModel: result.type as any,
-    status: result.archived ? 'archived' : 'active'
+    status: result.archived ? 'archived' : 'active',
+    workflowStatus: (result.workflowStatus as any) || 'active'
   } as Project
 }

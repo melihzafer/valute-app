@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS "projects" (
   "fixed_price" integer,
   "unit_name" text,
   "archived" integer DEFAULT false,
+  "workflow_status" text DEFAULT 'active',
   "assets_path" text,
   "notes" text,
   "created_at" integer
@@ -137,6 +138,123 @@ CREATE TABLE IF NOT EXISTS "screenshots" (
   FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE cascade,
   FOREIGN KEY ("log_id") REFERENCES "logs"("id") ON UPDATE no action ON DELETE set null
 );
+
+CREATE TABLE IF NOT EXISTS "daily_reports" (
+  "id" text PRIMARY KEY NOT NULL,
+  "project_id" text NOT NULL,
+  "report_date" integer NOT NULL,
+  "content" text NOT NULL,
+  "file_path" text,
+  "created_at" integer,
+  FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE cascade
+);
+
+CREATE TABLE IF NOT EXISTS "ideas" (
+  "id" text PRIMARY KEY NOT NULL,
+  "title" text NOT NULL,
+  "body" text,
+  "tags" text,
+  "status" text DEFAULT 'spark' NOT NULL,
+  "promoted_project_id" text,
+  "created_at" integer,
+  FOREIGN KEY ("promoted_project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE set null
+);
+
+CREATE TABLE IF NOT EXISTS "notes" (
+  "id" text PRIMARY KEY NOT NULL,
+  "title" text NOT NULL,
+  "content" text,
+  "area" text DEFAULT 'general',
+  "tags" text,
+  "pinned" integer DEFAULT false,
+  "project_id" text,
+  "created_at" integer,
+  "updated_at" integer,
+  FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE set null
+);
+
+CREATE TABLE IF NOT EXISTS "tasks" (
+  "id" text PRIMARY KEY NOT NULL,
+  "title" text NOT NULL,
+  "notes" text,
+  "status" text DEFAULT 'todo' NOT NULL,
+  "priority" text DEFAULT 'medium',
+  "area" text DEFAULT 'general',
+  "due_date" integer,
+  "project_id" text,
+  "goal_id" text,
+  "sort_order" integer DEFAULT 0,
+  "created_at" integer,
+  "completed_at" integer,
+  FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE set null
+);
+
+CREATE TABLE IF NOT EXISTS "goals" (
+  "id" text PRIMARY KEY NOT NULL,
+  "title" text NOT NULL,
+  "description" text,
+  "area" text DEFAULT 'general',
+  "target_value" real DEFAULT 100,
+  "current_value" real DEFAULT 0,
+  "unit" text,
+  "due_date" integer,
+  "status" text DEFAULT 'active' NOT NULL,
+  "created_at" integer
+);
+
+CREATE TABLE IF NOT EXISTS "habits" (
+  "id" text PRIMARY KEY NOT NULL,
+  "name" text NOT NULL,
+  "area" text DEFAULT 'general',
+  "color" text DEFAULT '#6366f1',
+  "schedule" text DEFAULT 'daily',
+  "archived" integer DEFAULT false,
+  "created_at" integer
+);
+
+CREATE TABLE IF NOT EXISTS "habit_logs" (
+  "id" text PRIMARY KEY NOT NULL,
+  "habit_id" text NOT NULL,
+  "date" text NOT NULL,
+  "created_at" integer,
+  FOREIGN KEY ("habit_id") REFERENCES "habits"("id") ON UPDATE no action ON DELETE cascade
+);
+
+CREATE TABLE IF NOT EXISTS "courses" (
+  "id" text PRIMARY KEY NOT NULL,
+  "name" text NOT NULL,
+  "code" text,
+  "instructor" text,
+  "credits" real,
+  "semester" text,
+  "color" text DEFAULT '#6366f1',
+  "archived" integer DEFAULT false,
+  "created_at" integer
+);
+
+CREATE TABLE IF NOT EXISTS "assignments" (
+  "id" text PRIMARY KEY NOT NULL,
+  "course_id" text NOT NULL,
+  "title" text NOT NULL,
+  "notes" text,
+  "due_date" integer,
+  "status" text DEFAULT 'todo' NOT NULL,
+  "grade" real,
+  "weight" real,
+  "created_at" integer,
+  FOREIGN KEY ("course_id") REFERENCES "courses"("id") ON UPDATE no action ON DELETE cascade
+);
+
+CREATE TABLE IF NOT EXISTS "mood_entries" (
+  "id" text PRIMARY KEY NOT NULL,
+  "date" text NOT NULL,
+  "mood" integer NOT NULL,
+  "energy" integer,
+  "stress" integer,
+  "note" text,
+  "gratitude" text,
+  "created_at" integer
+);
 `
 
 // Migration SQL for existing databases (add columns that may be missing)
@@ -224,6 +342,24 @@ export function initializeDatabase(): ReturnType<typeof drizzle> {
         console.log('Adding client_id column to projects table...')
         sqlite.exec('ALTER TABLE "projects" ADD COLUMN "client_id" text REFERENCES clients(id);')
         console.log('client_id column added to projects successfully')
+      }
+
+      // Check if workflow_status column exists in projects table
+      const projectsHasWorkflowStatus = projectsInfo.some((col) => col.name === 'workflow_status')
+
+      if (!projectsHasWorkflowStatus) {
+        console.log('Adding workflow_status column to projects table...')
+        sqlite.exec('ALTER TABLE "projects" ADD COLUMN "workflow_status" text DEFAULT \'active\';')
+        console.log('workflow_status column added to projects successfully')
+      }
+
+      // Check if category column exists in projects table (M6 Hobbies/personal projects)
+      const projectsHasCategory = projectsInfo.some((col) => col.name === 'category')
+
+      if (!projectsHasCategory) {
+        console.log('Adding category column to projects table...')
+        sqlite.exec('ALTER TABLE "projects" ADD COLUMN "category" text DEFAULT \'work\';')
+        console.log('category column added to projects successfully')
       }
     } catch (migrationError) {
       // Column might already exist, that's fine

@@ -27,6 +27,8 @@ export const projects = sqliteTable('projects', {
   fixedPrice: integer('fixed_price'), // Cents for fixed-price projects
   unitName: text('unit_name'), // For UNIT_BASED: 'Page', 'Article', 'Video', etc.
   archived: integer('archived', { mode: 'boolean' }).default(false),
+  workflowStatus: text('workflow_status').default('active'), // 'active' | 'on_hold' | 'done' (lifecycle, independent of archived)
+  category: text('category').default('work'), // 'work' | 'hobby' | 'personal' (M6 — same engine, different life area)
   assetsPath: text('assets_path'), // Local folder path for project files
   notes: text('notes'), // The Canvas - persistent project notes
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
@@ -140,6 +142,139 @@ export const screenshots = sqliteTable('screenshots', {
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
 })
 
+// daily_reports: End-of-day "what I did" reports, also written to disk as .md files
+export const dailyReports = sqliteTable('daily_reports', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  reportDate: integer('report_date', { mode: 'timestamp' }).notNull(), // The day the report covers
+  content: text('content').notNull(), // Raw markdown pasted by the user
+  filePath: text('file_path'), // Absolute path to the .md written on disk (null if write failed)
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
+// ideas: Brainstorm space for ideas not yet tied to a project
+export const ideas = sqliteTable('ideas', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  body: text('body'), // Markdown notes
+  tags: text('tags'), // JSON array of tags
+  status: text('status').notNull().default('spark'), // 'spark' | 'exploring' | 'parked' | 'promoted'
+  promotedProjectId: text('promoted_project_id').references(() => projects.id, {
+    onDelete: 'set null'
+  }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
+// ============================================================
+// Life-OS domains (M3 University, M5 Mood, M7 Notes, M8 Tasks/Goals/Habits)
+// ============================================================
+
+// notes: Block/markdown notes — personal knowledge base (M7)
+export const notes = sqliteTable('notes', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  content: text('content'), // Markdown / rich text
+  area: text('area').default('general'), // life area tag: work | uni | health | psychology | hobby | money | general
+  tags: text('tags'), // JSON array
+  pinned: integer('pinned', { mode: 'boolean' }).default(false),
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
+// tasks: Unified to-do across every life area (M8)
+export const tasks = sqliteTable('tasks', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  notes: text('notes'),
+  status: text('status').notNull().default('todo'), // 'todo' | 'doing' | 'done'
+  priority: text('priority').default('medium'), // 'low' | 'medium' | 'high'
+  area: text('area').default('general'),
+  dueDate: integer('due_date', { mode: 'timestamp' }),
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  goalId: text('goal_id'),
+  sortOrder: integer('sort_order').default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  completedAt: integer('completed_at', { mode: 'timestamp' })
+})
+
+// goals: OKR-style goals with measurable progress (M8)
+export const goals = sqliteTable('goals', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  area: text('area').default('general'),
+  targetValue: real('target_value').default(100),
+  currentValue: real('current_value').default(0),
+  unit: text('unit'), // '%', 'hrs', '$', 'books', etc.
+  dueDate: integer('due_date', { mode: 'timestamp' }),
+  status: text('status').notNull().default('active'), // 'active' | 'done' | 'archived'
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
+// habits: Recurring habits to build (M8)
+export const habits = sqliteTable('habits', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  area: text('area').default('general'),
+  color: text('color').default('#6366f1'),
+  schedule: text('schedule').default('daily'), // 'daily' for now
+  archived: integer('archived', { mode: 'boolean' }).default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
+// habit_logs: One row per habit per completed day (M8)
+export const habitLogs = sqliteTable('habit_logs', {
+  id: text('id').primaryKey(),
+  habitId: text('habit_id')
+    .notNull()
+    .references(() => habits.id, { onDelete: 'cascade' }),
+  date: text('date').notNull(), // 'YYYY-MM-DD'
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
+// courses: University courses (M3)
+export const courses = sqliteTable('courses', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  code: text('code'), // 'CS101'
+  instructor: text('instructor'),
+  credits: real('credits'),
+  semester: text('semester'), // 'Fall 2026'
+  color: text('color').default('#6366f1'),
+  archived: integer('archived', { mode: 'boolean' }).default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
+// assignments: Coursework with deadlines and grades (M3)
+export const assignments = sqliteTable('assignments', {
+  id: text('id').primaryKey(),
+  courseId: text('course_id')
+    .notNull()
+    .references(() => courses.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  notes: text('notes'),
+  dueDate: integer('due_date', { mode: 'timestamp' }),
+  status: text('status').notNull().default('todo'), // 'todo' | 'doing' | 'done'
+  grade: real('grade'), // achieved grade, 0-100
+  weight: real('weight'), // % weight toward final grade
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
+// mood_entries: Daily mood/energy/stress journal (M5)
+export const moodEntries = sqliteTable('mood_entries', {
+  id: text('id').primaryKey(),
+  date: text('date').notNull(), // 'YYYY-MM-DD' (one per day)
+  mood: integer('mood').notNull(), // 1-5
+  energy: integer('energy'), // 1-5
+  stress: integer('stress'), // 1-5
+  note: text('note'),
+  gratitude: text('gratitude'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
 // Export types for TypeScript
 export type Project = typeof projects.$inferSelect
 export type NewProject = typeof projects.$inferInsert
@@ -170,3 +305,33 @@ export type NewPayment = typeof payments.$inferInsert
 
 export type Screenshot = typeof screenshots.$inferSelect
 export type NewScreenshot = typeof screenshots.$inferInsert
+
+export type DailyReport = typeof dailyReports.$inferSelect
+export type NewDailyReport = typeof dailyReports.$inferInsert
+
+export type Idea = typeof ideas.$inferSelect
+export type NewIdea = typeof ideas.$inferInsert
+
+export type Note = typeof notes.$inferSelect
+export type NewNote = typeof notes.$inferInsert
+
+export type Task = typeof tasks.$inferSelect
+export type NewTask = typeof tasks.$inferInsert
+
+export type Goal = typeof goals.$inferSelect
+export type NewGoal = typeof goals.$inferInsert
+
+export type Habit = typeof habits.$inferSelect
+export type NewHabit = typeof habits.$inferInsert
+
+export type HabitLog = typeof habitLogs.$inferSelect
+export type NewHabitLog = typeof habitLogs.$inferInsert
+
+export type Course = typeof courses.$inferSelect
+export type NewCourse = typeof courses.$inferInsert
+
+export type Assignment = typeof assignments.$inferSelect
+export type NewAssignment = typeof assignments.$inferInsert
+
+export type MoodEntry = typeof moodEntries.$inferSelect
+export type NewMoodEntry = typeof moodEntries.$inferInsert

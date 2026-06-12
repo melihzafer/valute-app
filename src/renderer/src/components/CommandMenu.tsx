@@ -10,7 +10,7 @@ import { useProjectStore } from '../store/useProjectStore'
 
 export function CommandMenu() {
   const navigate = useNavigate()
-  const { isCmdkOpen, setCmdkOpen, toggleCmdk } = useUIStore()
+  const { isCmdkOpen, setCmdkOpen, toggleCmdk, requestNewProject } = useUIStore()
   const { projects, fetchProjects } = useProjectStore()
 
   // Listen for Ctrl+K / Cmd+K global shortcut
@@ -110,7 +110,7 @@ export function CommandMenu() {
                 onSelect={() =>
                   runCommand(() => {
                     navigate('/projects')
-                    // TODO: Trigger new project modal
+                    requestNewProject()
                   })
                 }
                 className="flex items-center gap-3 px-3 py-2.5 text-sm text-foreground rounded-md cursor-pointer transition-colors aria-selected:bg-accent aria-selected:text-primary"
@@ -120,12 +120,7 @@ export function CommandMenu() {
               </Command.Item>
 
               <Command.Item
-                onSelect={() =>
-                  runCommand(() => {
-                    navigate('/reports')
-                    // TODO: Trigger invoice generation
-                  })
-                }
+                onSelect={() => runCommand(() => navigate('/reports'))}
                 className="flex items-center gap-3 px-3 py-2.5 text-sm text-foreground rounded-md cursor-pointer transition-colors aria-selected:bg-accent aria-selected:text-primary"
               >
                 <FileText className="w-4 h-4" />

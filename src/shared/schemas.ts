@@ -18,6 +18,7 @@ export const ProjectSchemaBase = z.object({
     .max(3, { message: 'Currency must be at most 3 characters long.' }),
   unitName: z.string().min(1).optional(),
   status: z.enum(['active', 'archived']),
+  workflowStatus: z.enum(['active', 'on_hold', 'done']).optional(),
   createdAt: z.preprocess((arg) => new Date(arg as string), z.date())
 })
 

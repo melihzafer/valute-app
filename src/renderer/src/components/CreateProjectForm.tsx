@@ -79,6 +79,9 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({ initialData, onCl
   )
   const [unitName, setUnitName] = useState(initialData?.unitName || '')
   const [currency, setCurrency] = useState<string>(initialData?.currency || 'USD')
+  const [workflowStatus, setWorkflowStatus] = useState<'active' | 'on_hold' | 'done'>(
+    (initialData as any)?.workflowStatus || 'active'
+  )
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -130,7 +133,8 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({ initialData, onCl
         clientName: clientName.trim() || undefined,
         pricingModel, // This will be mapped to 'type' in the backend
         currency,
-        status: initialData?.status || 'active'
+        status: initialData?.status || 'active',
+        workflowStatus
       }
 
       // Set rates based on pricing model
@@ -271,9 +275,7 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({ initialData, onCl
           disabled={!!clientId}
         />
         {clientId && (
-          <p className="text-xs text-muted-foreground">
-            Auto-filled from selected client
-          </p>
+          <p className="text-xs text-muted-foreground">Auto-filled from selected client</p>
         )}
       </div>
 
@@ -440,6 +442,22 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({ initialData, onCl
         </Select>
       </div>
 
+      {/* Workflow Status */}
+      <div className="space-y-2">
+        <label htmlFor="workflowStatus" className="block text-sm font-medium text-foreground">
+          Status
+        </label>
+        <Select
+          id="workflowStatus"
+          value={workflowStatus}
+          onChange={(e) => setWorkflowStatus(e.target.value as 'active' | 'on_hold' | 'done')}
+        >
+          <option value="active">Active</option>
+          <option value="on_hold">On Hold</option>
+          <option value="done">Done</option>
+        </Select>
+      </div>
+
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-4 border-t border-border">
         <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
@@ -453,13 +471,20 @@ const CreateProjectForm: React.FC<CreateProjectFormProps> = ({ initialData, onCl
   )
 }
 
-// Wrapper component to use with Dialog
-export const CreateProjectModal: React.FC<Omit<CreateProjectFormProps, 'onClose'>> = (props) => {
-  const [isOpen, setIsOpen] = useState(false)
-
-  const handleClose = () => {
-    setIsOpen(false)
+// Wrapper component to use with Dialog. Open state can be controlled externally
+// (e.g. opened from the command menu) via `open` / `onOpenChange`.
+export const CreateProjectModal: React.FC<
+  Omit<CreateProjectFormProps, 'onClose'> & {
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
   }
+> = ({ open: controlledOpen, onOpenChange, ...props }) => {
+  const [internalOpen, setInternalOpen] = useState(false)
+
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen
+  const setIsOpen = onOpenChange || setInternalOpen
+
+  const handleClose = () => setIsOpen(false)
 
   return (
     <Dialog

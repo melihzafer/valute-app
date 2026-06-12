@@ -71,6 +71,75 @@ const api = {
     ipcRenderer.invoke('update-project-notes', id, notes),
   getProjectById: (id: string) => ipcRenderer.invoke('get-project-by-id', id),
 
+  // Daily Reports
+  saveDailyReport: (projectId: string, content: string, reportDate?: string) =>
+    ipcRenderer.invoke('save-daily-report', projectId, content, reportDate),
+  getDailyReports: (projectId: string) => ipcRenderer.invoke('get-daily-reports', projectId),
+  deleteDailyReport: (id: string) => ipcRenderer.invoke('delete-daily-report', id),
+  openDailyReportFile: (filePath: string) => ipcRenderer.invoke('open-daily-report-file', filePath),
+
+  // Time Reports
+  getTimeReport: (startDate: string, endDate: string) =>
+    ipcRenderer.invoke('get-time-report', startDate, endDate),
+  saveExportFile: (
+    defaultPath: string,
+    data: string | ArrayBuffer,
+    filters?: Array<{ name: string; extensions: string[] }>
+  ) => ipcRenderer.invoke('save-export-file', defaultPath, data, filters),
+
+  // Ideas (Brainstorm)
+  getIdeas: () => ipcRenderer.invoke('get-ideas'),
+  createIdea: (data: unknown) => ipcRenderer.invoke('create-idea', data),
+  updateIdea: (id: string, data: unknown) => ipcRenderer.invoke('update-idea', id, data),
+  deleteIdea: (id: string) => ipcRenderer.invoke('delete-idea', id),
+  promoteIdea: (id: string) => ipcRenderer.invoke('promote-idea', id),
+
+  // M7 Notes
+  getNotes: () => ipcRenderer.invoke('get-notes'),
+  createNote: (data: unknown) => ipcRenderer.invoke('create-note', data),
+  updateNote: (id: string, data: unknown) => ipcRenderer.invoke('update-note', id, data),
+  deleteNote: (id: string) => ipcRenderer.invoke('delete-note', id),
+
+  // M8 Tasks
+  getTasks: () => ipcRenderer.invoke('get-tasks'),
+  createTask: (data: unknown) => ipcRenderer.invoke('create-task', data),
+  updateTask: (id: string, data: unknown) => ipcRenderer.invoke('update-task', id, data),
+  deleteTask: (id: string) => ipcRenderer.invoke('delete-task', id),
+
+  // M8 Goals
+  getGoals: () => ipcRenderer.invoke('get-goals'),
+  createGoal: (data: unknown) => ipcRenderer.invoke('create-goal', data),
+  updateGoal: (id: string, data: unknown) => ipcRenderer.invoke('update-goal', id, data),
+  deleteGoal: (id: string) => ipcRenderer.invoke('delete-goal', id),
+
+  // M8 Habits
+  getHabits: () => ipcRenderer.invoke('get-habits'),
+  createHabit: (data: unknown) => ipcRenderer.invoke('create-habit', data),
+  updateHabit: (id: string, data: unknown) => ipcRenderer.invoke('update-habit', id, data),
+  deleteHabit: (id: string) => ipcRenderer.invoke('delete-habit', id),
+  toggleHabit: (id: string, date?: string) => ipcRenderer.invoke('toggle-habit', id, date),
+
+  // M3 University
+  getCourses: () => ipcRenderer.invoke('get-courses'),
+  createCourse: (data: unknown) => ipcRenderer.invoke('create-course', data),
+  updateCourse: (id: string, data: unknown) => ipcRenderer.invoke('update-course', id, data),
+  deleteCourse: (id: string) => ipcRenderer.invoke('delete-course', id),
+  getAssignments: (courseId?: string) => ipcRenderer.invoke('get-assignments', courseId),
+  createAssignment: (data: unknown) => ipcRenderer.invoke('create-assignment', data),
+  updateAssignment: (id: string, data: unknown) =>
+    ipcRenderer.invoke('update-assignment', id, data),
+  deleteAssignment: (id: string) => ipcRenderer.invoke('delete-assignment', id),
+  getGpa: () => ipcRenderer.invoke('get-gpa'),
+
+  // M5 Mood Journal
+  getMoodEntries: () => ipcRenderer.invoke('get-mood-entries'),
+  saveMoodEntry: (data: unknown) => ipcRenderer.invoke('save-mood-entry', data),
+  deleteMoodEntry: (id: string) => ipcRenderer.invoke('delete-mood-entry', id),
+
+  // M1/M2 Life dashboard + stats
+  getLifeOverview: () => ipcRenderer.invoke('get-life-overview'),
+  getLifeStats: (days?: number) => ipcRenderer.invoke('get-life-stats', days),
+
   // Floating Timer
   openFloatingTimer: () => ipcRenderer.invoke('open-floating-timer'),
   closeFloatingTimer: () => ipcRenderer.invoke('close-floating-timer'),

@@ -29,6 +29,9 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({ projectToEdit, onSubm
   const [hourlyRate, setHourlyRate] = useState<number>(projectToEdit.hourlyRate / 10000) // Convert from cents to dollars
   const [currency, setCurrency] = useState<string>(projectToEdit.currency)
   const [status, setStatus] = useState<'active' | 'archived'>(projectToEdit.status)
+  const [workflowStatus, setWorkflowStatus] = useState<'active' | 'on_hold' | 'done'>(
+    projectToEdit.workflowStatus || 'active'
+  )
   const [error, setError] = useState<string | null>(null)
 
   const currencies = ['USD', 'EUR', 'GBP', 'TRY']
@@ -52,7 +55,8 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({ projectToEdit, onSubm
         fixedPrice: projectToEdit.fixedPrice || 0,
         unitName: projectToEdit.unitName || undefined,
         currency,
-        status
+        status,
+        workflowStatus
       } as any
 
       await onSubmit(updatedProjectData)
@@ -143,8 +147,22 @@ const EditProjectForm: React.FC<EditProjectFormProps> = ({ projectToEdit, onSubm
         </Select>
       </div>
       <div>
+        <label htmlFor="workflowStatus" className="block text-sm font-medium text-foreground mb-2">
+          Lifecycle
+        </label>
+        <Select
+          id="workflowStatus"
+          value={workflowStatus}
+          onChange={(e) => setWorkflowStatus(e.target.value as 'active' | 'on_hold' | 'done')}
+        >
+          <option value="active">Active</option>
+          <option value="on_hold">On Hold</option>
+          <option value="done">Done</option>
+        </Select>
+      </div>
+      <div>
         <label htmlFor="status" className="block text-sm font-medium text-foreground mb-2">
-          Status
+          Archive State
         </label>
         <Select
           id="status"

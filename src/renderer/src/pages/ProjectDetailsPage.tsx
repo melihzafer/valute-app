@@ -8,8 +8,12 @@ import { cn, formatCurrency } from '../lib/utils'
 import { Button } from '../components/ui/Button'
 import { Textarea } from '../components/ui/Textarea'
 import LogList from '../components/LogList'
+import LogEntryForm from '../components/LogEntryForm'
 import ExpenseList from '../components/ExpenseList'
 import EditProjectForm from '../components/EditProjectForm'
+import DailyReportPanel from '../components/DailyReportPanel'
+import ProjectInvoicePanel from '../components/ProjectInvoicePanel'
+import { Dialog } from '../components/ui/Dialog'
 import { AssetList } from '../components/AssetList'
 import { ScreenshotGallery } from '../components/ScreenshotGallery'
 import { useSettingsStore } from '../store/useSettingsStore'
@@ -26,15 +30,27 @@ import {
   FolderOpen,
   Check,
   Loader2,
-  Camera
+  Camera,
+  ClipboardList
 } from 'lucide-react'
 
-type TabId = 'overview' | 'logs' | 'expenses' | 'notes' | 'assets' | 'screenshots' | 'settings'
+type TabId =
+  | 'overview'
+  | 'logs'
+  | 'daily'
+  | 'expenses'
+  | 'invoices'
+  | 'notes'
+  | 'assets'
+  | 'screenshots'
+  | 'settings'
 
 const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'logs', label: 'Work Logs', icon: Clock },
+  { id: 'daily', label: 'Daily Report', icon: ClipboardList },
   { id: 'expenses', label: 'Expenses', icon: Receipt },
+  { id: 'invoices', label: 'Invoices', icon: FileText },
   { id: 'notes', label: 'Notes', icon: FileText },
   { id: 'assets', label: 'Assets', icon: FolderOpen },
   { id: 'screenshots', label: 'Screenshots', icon: Camera },
@@ -52,6 +68,7 @@ const ProjectDetailsPage: React.FC = () => {
   const [notes, setNotes] = useState<string>('')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [isLoading, setIsLoading] = useState(true)
+  const [editingLog, setEditingLog] = useState<Log | null>(null)
   const notesInitialized = useRef(false)
 
   const project = projects.find((p) => p.id === id)
@@ -278,8 +295,16 @@ const ProjectDetailsPage: React.FC = () => {
 
   // Handlers
   const handleEditLog = (log: Log) => {
-    // TODO: Open edit modal
-    console.log('Edit log:', log)
+    setEditingLog(log)
+  }
+
+  // Edit = delete the old entry, then save the corrected one (no update-log IPC exists).
+  const handleUpdateLog = async (logData: Omit<import('../../../shared/types').LogIPC, 'id'>) => {
+    if (!editingLog) return
+    await window.api.deleteLog(editingLog.id)
+    await window.api.saveLog(logData)
+    setEditingLog(null)
+    await refreshLogs()
   }
 
   const handleDeleteLog = async (logId: string) => {
@@ -508,6 +533,9 @@ const ProjectDetailsPage: React.FC = () => {
           />
         )}
 
+        {/* Daily Report Tab */}
+        {activeTab === 'daily' && <DailyReportPanel projectId={project.id} logs={logs} />}
+
         {/* Expenses Tab */}
         {activeTab === 'expenses' && (
           <ExpenseList
@@ -518,6 +546,9 @@ const ProjectDetailsPage: React.FC = () => {
             onDeleteExpense={handleDeleteExpense}
           />
         )}
+
+        {/* Invoices Tab */}
+        {activeTab === 'invoices' && <ProjectInvoicePanel project={project} />}
 
         {/* Notes Tab */}
         {activeTab === 'notes' && (
@@ -607,6 +638,38 @@ const ProjectDetailsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Edit Log Modal (HF-01) */}
+      <Dialog
+        trigger={<span style={{ display: 'none' }} />}
+        title="Edit Log Entry"
+        open={!!editingLog}
+        onOpenChange={(open) => {
+          if (!open) setEditingLog(null)
+        }}
+      >
+        {editingLog && (
+          <LogEntryForm
+            projectId={project.id}
+            initialData={{
+              projectId: editingLog.projectId,
+              startTime:
+                editingLog.startTime instanceof Date
+                  ? editingLog.startTime.toISOString()
+                  : String(editingLog.startTime),
+              endTime: editingLog.endTime
+                ? editingLog.endTime instanceof Date
+                  ? editingLog.endTime.toISOString()
+                  : String(editingLog.endTime)
+                : null,
+              accumulatedTime: editingLog.accumulatedTime,
+              description: editingLog.description
+            }}
+            onSubmitLog={handleUpdateLog}
+            onClose={() => setEditingLog(null)}
+          />
+        )}
+      </Dialog>
     </div>
   )
 }

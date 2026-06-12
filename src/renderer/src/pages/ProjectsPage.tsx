@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProjectStore } from '../store/useProjectStore'
 import { useTimerStore } from '../store/useTimerStore'
+import { useUIStore } from '../store/useUIStore'
 import ProjectList from '../components/ProjectList'
 import type { Project } from '../../../shared/types'
 import { CreateProjectModal } from '../components/CreateProjectForm'
@@ -24,13 +25,24 @@ const ProjectsPage: React.FC = () => {
   } = useProjectStore()
 
   const { startTimer } = useTimerStore()
+  const { pendingNewProject, clearNewProject } = useUIStore()
 
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [filter, setFilter] = useState<'all' | 'active' | 'on_hold' | 'done' | 'archived'>('all')
 
   useEffect(() => {
     fetchProjects()
   }, [fetchProjects])
+
+  // Open the create modal when requested from elsewhere (e.g. the command menu).
+  useEffect(() => {
+    if (pendingNewProject) {
+      setIsCreateModalOpen(true)
+      clearNewProject()
+    }
+  }, [pendingNewProject, clearNewProject])
 
   const handleSelectProject = async (projectId: string) => {
     selectProject(projectId)
@@ -79,15 +91,63 @@ const ProjectsPage: React.FC = () => {
     setIsEditModalOpen(false)
   }
 
+  // Apply the active filter chip.
+  const visibleProjects = projects.filter((p) => {
+    switch (filter) {
+      case 'all':
+        return p.status !== 'archived'
+      case 'archived':
+        return p.status === 'archived'
+      case 'active':
+        return p.status === 'active' && (p.workflowStatus || 'active') === 'active'
+      case 'on_hold':
+        return p.status === 'active' && p.workflowStatus === 'on_hold'
+      case 'done':
+        return p.status === 'active' && p.workflowStatus === 'done'
+      default:
+        return true
+    }
+  })
+
+  const filterChips: { id: typeof filter; label: string }[] = [
+    { id: 'all', label: 'All' },
+    { id: 'active', label: 'Active' },
+    { id: 'on_hold', label: 'On Hold' },
+    { id: 'done', label: 'Done' },
+    { id: 'archived', label: 'Archived' }
+  ]
+
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Projects</h1>
-        <CreateProjectModal onSubmit={handleProjectSubmit} />
+        <CreateProjectModal
+          onSubmit={handleProjectSubmit}
+          open={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+        />
+      </div>
+
+      {/* Status filter chips */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {filterChips.map((chip) => (
+          <button
+            key={chip.id}
+            onClick={() => setFilter(chip.id)}
+            className={
+              'px-3 py-1.5 text-sm rounded-full border transition-colors ' +
+              (filter === chip.id
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-transparent text-muted-foreground border-border hover:text-foreground')
+            }
+          >
+            {chip.label}
+          </button>
+        ))}
       </div>
 
       <ProjectList
-        projects={projects}
+        projects={visibleProjects}
         onSelectProject={handleSelectProject}
         onEditProject={handleOpenEditModal}
         onDeleteProject={handleDeleteProject}

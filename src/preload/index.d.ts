@@ -17,7 +17,20 @@ import type {
   LedgerEntry,
   AppSettings,
   DatabaseExport,
-  ScreenshotIPC
+  ScreenshotIPC,
+  DailyReportIPC,
+  TimeReport,
+  IdeaIPC,
+  IdeaStatus,
+  NoteIPC,
+  TaskIPC,
+  GoalIPC,
+  HabitIPC,
+  CourseIPC,
+  AssignmentIPC,
+  MoodEntryIPC,
+  LifeOverview,
+  LifeStats
 } from '../shared/types'
 
 interface API {
@@ -31,6 +44,91 @@ interface API {
   deleteProject: (id: string) => Promise<IPCResponse<void>>
   getProjectById: (id: string) => Promise<IPCResponse<ProjectIPC | null>>
   updateProjectNotes: (id: string, notes: string) => Promise<IPCResponse<void>>
+
+  // Daily Reports
+  saveDailyReport: (
+    projectId: string,
+    content: string,
+    reportDate?: string
+  ) => Promise<IPCResponse<DailyReportIPC>>
+  getDailyReports: (projectId: string) => Promise<IPCResponse<DailyReportIPC[]>>
+  deleteDailyReport: (id: string) => Promise<IPCResponse<void>>
+  openDailyReportFile: (filePath: string) => Promise<IPCResponse<void>>
+
+  // Time Reports
+  getTimeReport: (startDate: string, endDate: string) => Promise<IPCResponse<TimeReport>>
+  saveExportFile: (
+    defaultPath: string,
+    data: string | ArrayBuffer,
+    filters?: Array<{ name: string; extensions: string[] }>
+  ) => Promise<IPCResponse<string | null>>
+
+  // Ideas (Brainstorm)
+  getIdeas: () => Promise<IPCResponse<IdeaIPC[]>>
+  createIdea: (data: {
+    title: string
+    body?: string | null
+    tags?: string[]
+    status?: IdeaStatus
+  }) => Promise<IPCResponse<IdeaIPC>>
+  updateIdea: (
+    id: string,
+    data: { title?: string; body?: string | null; tags?: string[]; status?: IdeaStatus }
+  ) => Promise<IPCResponse<IdeaIPC>>
+  deleteIdea: (id: string) => Promise<IPCResponse<void>>
+  promoteIdea: (id: string) => Promise<IPCResponse<{ projectId: string }>>
+
+  // M7 Notes
+  getNotes: () => Promise<IPCResponse<NoteIPC[]>>
+  createNote: (data: Partial<NoteIPC> & { title: string }) => Promise<IPCResponse<NoteIPC>>
+  updateNote: (id: string, data: Partial<NoteIPC>) => Promise<IPCResponse<NoteIPC>>
+  deleteNote: (id: string) => Promise<IPCResponse<void>>
+
+  // M8 Tasks
+  getTasks: () => Promise<IPCResponse<TaskIPC[]>>
+  createTask: (data: Partial<TaskIPC> & { title: string }) => Promise<IPCResponse<TaskIPC>>
+  updateTask: (id: string, data: Partial<TaskIPC>) => Promise<IPCResponse<TaskIPC>>
+  deleteTask: (id: string) => Promise<IPCResponse<void>>
+
+  // M8 Goals
+  getGoals: () => Promise<IPCResponse<GoalIPC[]>>
+  createGoal: (data: Partial<GoalIPC> & { title: string }) => Promise<IPCResponse<GoalIPC>>
+  updateGoal: (id: string, data: Partial<GoalIPC>) => Promise<IPCResponse<GoalIPC>>
+  deleteGoal: (id: string) => Promise<IPCResponse<void>>
+
+  // M8 Habits
+  getHabits: () => Promise<IPCResponse<HabitIPC[]>>
+  createHabit: (data: Partial<HabitIPC> & { name: string }) => Promise<IPCResponse<HabitIPC>>
+  updateHabit: (id: string, data: Partial<HabitIPC>) => Promise<IPCResponse<HabitIPC>>
+  deleteHabit: (id: string) => Promise<IPCResponse<void>>
+  toggleHabit: (id: string, date?: string) => Promise<IPCResponse<HabitIPC>>
+
+  // M3 University
+  getCourses: () => Promise<IPCResponse<CourseIPC[]>>
+  createCourse: (data: Partial<CourseIPC> & { name: string }) => Promise<IPCResponse<CourseIPC>>
+  updateCourse: (id: string, data: Partial<CourseIPC>) => Promise<IPCResponse<CourseIPC>>
+  deleteCourse: (id: string) => Promise<IPCResponse<void>>
+  getAssignments: (courseId?: string) => Promise<IPCResponse<AssignmentIPC[]>>
+  createAssignment: (
+    data: Partial<AssignmentIPC> & { courseId: string; title: string }
+  ) => Promise<IPCResponse<AssignmentIPC>>
+  updateAssignment: (
+    id: string,
+    data: Partial<AssignmentIPC>
+  ) => Promise<IPCResponse<AssignmentIPC>>
+  deleteAssignment: (id: string) => Promise<IPCResponse<void>>
+  getGpa: () => Promise<IPCResponse<{ gradeAvg: number | null; totalCredits: number }>>
+
+  // M5 Mood Journal
+  getMoodEntries: () => Promise<IPCResponse<MoodEntryIPC[]>>
+  saveMoodEntry: (
+    data: Partial<MoodEntryIPC> & { mood: number }
+  ) => Promise<IPCResponse<MoodEntryIPC>>
+  deleteMoodEntry: (id: string) => Promise<IPCResponse<void>>
+
+  // M1/M2 Life dashboard + stats
+  getLifeOverview: () => Promise<IPCResponse<LifeOverview>>
+  getLifeStats: (days?: number) => Promise<IPCResponse<LifeStats>>
 
   // Logs
   getLogsByProject: (projectId: string) => Promise<IPCResponse<LogIPC[]>>
@@ -114,7 +212,10 @@ interface API {
   getClientsWithBalances: () => Promise<IPCResponse<ClientWithBalance[]>>
   getClientById: (id: string) => Promise<IPCResponse<ClientIPC | null>>
   createClient: (data: Omit<ClientIPC, 'id' | 'createdAt'>) => Promise<IPCResponse<ClientIPC>>
-  updateClient: (id: string, data: Partial<Omit<ClientIPC, 'createdAt'>>) => Promise<IPCResponse<ClientIPC>>
+  updateClient: (
+    id: string,
+    data: Partial<Omit<ClientIPC, 'createdAt'>>
+  ) => Promise<IPCResponse<ClientIPC>>
   deleteClient: (id: string) => Promise<IPCResponse<void>>
   getClientBalance: (clientId: string) => Promise<IPCResponse<ClientBalance>>
   getClientLedger: (clientId: string) => Promise<IPCResponse<LedgerEntry[]>>
@@ -124,7 +225,10 @@ interface API {
   // Payments
   getPaymentsByClient: (clientId: string) => Promise<IPCResponse<PaymentIPC[]>>
   createPayment: (data: Omit<PaymentIPC, 'id' | 'createdAt'>) => Promise<IPCResponse<PaymentIPC>>
-  updatePayment: (id: string, data: Partial<Omit<PaymentIPC, 'createdAt'>>) => Promise<IPCResponse<PaymentIPC>>
+  updatePayment: (
+    id: string,
+    data: Partial<Omit<PaymentIPC, 'createdAt'>>
+  ) => Promise<IPCResponse<PaymentIPC>>
   deletePayment: (id: string) => Promise<IPCResponse<void>>
 
   // Settings
@@ -160,7 +264,9 @@ interface API {
 
   // Screenshot export
   exportScreenshot: (filePath: string, destinationPath?: string) => Promise<IPCResponse<string>>
-  exportAllScreenshots: (projectId: string) => Promise<IPCResponse<{ count: number; folder: string }>>
+  exportAllScreenshots: (
+    projectId: string
+  ) => Promise<IPCResponse<{ count: number; folder: string }>>
 
   // Timer state query for auto-reopen after screenshot
   onQueryTimerStateForReopen: (callback: () => void) => () => void

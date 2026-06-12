@@ -1,0 +1,325 @@
+{
+  "version": 1,
+  "bugs": [
+    {
+      "id": "bug-001",
+      "timestamp": "2026-06-12T16:54:25.267Z",
+      "error_message": "Type error",
+      "file": "src/shared/types.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T16:54:25.267Z"
+    },
+    {
+      "id": "bug-002",
+      "timestamp": "2026-06-12T16:54:57.871Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "src/main/handlers.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T16:54:57.871Z"
+    },
+    {
+      "id": "bug-003",
+      "timestamp": "2026-06-12T16:59:48.233Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/main/db/schema.ts",
+      "root_cause": "Had 'assets_path'",
+      "fix": "Changed to 'workflow_status'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T16:59:48.233Z"
+    },
+    {
+      "id": "bug-004",
+      "timestamp": "2026-06-12T16:59:53.278Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/main/db/index.ts",
+      "root_cause": "Had \"assets_path\"",
+      "fix": "Changed to \"workflow_status\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T16:59:53.278Z"
+    },
+    {
+      "id": "bug-005",
+      "timestamp": "2026-06-12T17:00:41.725Z",
+      "error_message": "Type error",
+      "file": "src/main/services/ProjectService.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:00:41.725Z"
+    },
+    {
+      "id": "bug-006",
+      "timestamp": "2026-06-12T17:01:43.202Z",
+      "error_message": "Type error",
+      "file": "src/renderer/src/components/CreateProjectForm.tsx",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation | Also: {/* Workflow Status */}; <div className=\"space-y-2\">",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-06-12T17:01:54.720Z"
+    },
+    {
+      "id": "bug-007",
+      "timestamp": "2026-06-12T17:01:48.919Z",
+      "error_message": "CSS fix: status",
+      "file": "src/renderer/src/components/CreateProjectForm.tsx",
+      "root_cause": "status: initialData?.status || 'active' → initialData?.status || 'active',",
+      "fix": "Changed status: initialData?.status || 'active' → initialData?.status || 'active',",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:01:48.919Z"
+    },
+    {
+      "id": "bug-008",
+      "timestamp": "2026-06-12T17:03:36.317Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/pages/ProjectDetailsPage.tsx",
+      "root_cause": "Had '../components/ui/Dialog'",
+      "fix": "Changed to '../components/ProjectInvoicePanel'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:03:36.317Z"
+    },
+    {
+      "id": "bug-009",
+      "timestamp": "2026-06-12T17:03:43.527Z",
+      "error_message": "CSS fix: id",
+      "file": "src/renderer/src/pages/ProjectDetailsPage.tsx",
+      "root_cause": "id: 'expenses', label: 'Expenses', icon: Receipt → 'invoices', label: 'Invoices', icon: FileText",
+      "fix": "Changed id: 'expenses', label: 'Expenses', icon: Receipt → 'invoices', label: 'Invoices', icon: FileText",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:03:43.527Z"
+    },
+    {
+      "id": "bug-010",
+      "timestamp": "2026-06-12T17:04:02.295Z",
+      "error_message": "Type error",
+      "file": "src/main/db/schema.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:04:02.295Z"
+    },
+    {
+      "id": "bug-011",
+      "timestamp": "2026-06-12T17:04:20.008Z",
+      "error_message": "Type error",
+      "file": "src/shared/types.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:04:20.008Z"
+    },
+    {
+      "id": "bug-012",
+      "timestamp": "2026-06-12T17:04:53.516Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "src/main/handlers.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:04:53.516Z"
+    },
+    {
+      "id": "bug-013",
+      "timestamp": "2026-06-12T17:05:29.327Z",
+      "error_message": "CSS fix: path",
+      "file": "src/renderer/src/components/Sidebar.tsx",
+      "root_cause": "path: '/reports', label: 'Reports', icon: ReceiptText → '/ideas', label: 'Ideas', icon: Lightbulb",
+      "fix": "Changed path: '/reports', label: 'Reports', icon: ReceiptText → '/ideas', label: 'Ideas', icon: Lightbulb",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:05:29.327Z"
+    },
+    {
+      "id": "bug-014",
+      "timestamp": "2026-06-12T17:06:05.314Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/App.tsx",
+      "root_cause": "Had './pages/SettingsPage'",
+      "fix": "Changed to './pages/IdeasPage'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-06-12T17:06:10.070Z"
+    },
+    {
+      "id": "bug-015",
+      "timestamp": "2026-06-12T17:07:19.944Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/MVP_PLAN.md",
+      "root_cause": "9 lines replaced/restructured",
+      "fix": "Rewrote 15→15 lines (9 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:07:19.944Z"
+    },
+    {
+      "id": "bug-016",
+      "timestamp": "2026-06-12T17:23:12.186Z",
+      "error_message": "Type error",
+      "file": "src/main/db/schema.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:23:12.186Z"
+    },
+    {
+      "id": "bug-017",
+      "timestamp": "2026-06-12T17:24:04.041Z",
+      "error_message": "Type error",
+      "file": "src/shared/types.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:24:04.042Z"
+    },
+    {
+      "id": "bug-018",
+      "timestamp": "2026-06-12T17:26:42.176Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "src/main/handlers.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:26:42.176Z"
+    },
+    {
+      "id": "bug-019",
+      "timestamp": "2026-06-12T17:32:54.942Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/renderer/src/components/Sidebar.tsx",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 44→84 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:32:54.942Z"
+    },
+    {
+      "id": "bug-020",
+      "timestamp": "2026-06-12T17:33:17.854Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/pages/UniversityPage.tsx",
+      "root_cause": "Had '../components/ui/Select'",
+      "fix": "Changed to '../components/ui/Dialog'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T17:33:17.854Z"
+    }
+  ]
+}

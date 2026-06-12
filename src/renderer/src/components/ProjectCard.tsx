@@ -111,11 +111,26 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       <div className="space-y-3 mb-6">
         <div className="flex items-center justify-between">
           {getPricingModelBadge()}
-          <span
-            className={`text-xs font-medium ${project.status === 'active' ? 'text-green-500 dark:text-green-400' : 'text-muted-foreground'}`}
-          >
-            {project.status === 'active' ? '● Active' : '○ Archived'}
-          </span>
+          <div className="flex items-center gap-2">
+            {project.status === 'active' &&
+              project.workflowStatus &&
+              project.workflowStatus !== 'active' && (
+                <span
+                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-sm border ${
+                    project.workflowStatus === 'on_hold'
+                      ? 'text-yellow-500 border-yellow-500/30 bg-yellow-500/10'
+                      : 'text-blue-500 border-blue-500/30 bg-blue-500/10'
+                  }`}
+                >
+                  {project.workflowStatus === 'on_hold' ? 'On Hold' : 'Done'}
+                </span>
+              )}
+            <span
+              className={`text-xs font-medium ${project.status === 'active' ? 'text-green-500 dark:text-green-400' : 'text-muted-foreground'}`}
+            >
+              {project.status === 'active' ? '● Active' : '○ Archived'}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-baseline gap-1.5 text-foreground">

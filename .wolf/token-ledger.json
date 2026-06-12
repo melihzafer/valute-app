@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "created_at": "2026-06-12T16:54:04.106Z",
+  "lifetime": {
+    "total_tokens_estimated": 71314,
+    "total_reads": 12,
+    "total_writes": 31,
+    "total_sessions": 1,
+    "anatomy_hits": 12,
+    "anatomy_misses": 0,
+    "repeated_reads_blocked": 1,
+    "estimated_savings_vs_bare_cli": 17650
+  },
+  "sessions": [
+    {
+      "id": "session-2026-06-12-2010",
+      "started": "2026-06-12T17:10:02.081Z",
+      "ended": "2026-06-12T17:34:39.321Z",
+      "reads": [
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/db/schema.ts",
+          "tokens_estimated": 2658,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/App.tsx",
+          "tokens_estimated": 694,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/db/index.ts",
+          "tokens_estimated": 2706,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/services/IdeaService.ts",
+          "tokens_estimated": 986,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/components/Sidebar.tsx",
+          "tokens_estimated": 719,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/shared/types.ts",
+          "tokens_estimated": 2539,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/handlers.ts",
+          "tokens_estimated": 15250,
+          "was_repeated": true,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/preload/index.ts",
+          "tokens_estimated": 3126,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/preload/index.d.ts",
+          "tokens_estimated": 2497,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/pages/IdeasPage.tsx",
+          "tokens_estimated": 2747,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/services/ProjectService.ts",
+          "tokens_estimated": 2418,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/store/useProjectStore.ts",
+          "tokens_estimated": 1194,
+          "was_repeated": false,
+          "anatomy_had_description": false
+        }
+      ],
+      "writes": [
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/db/schema.ts",
+          "tokens_estimated": 1378,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/db/schema.ts",
+          "tokens_estimated": 263,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/db/index.ts",
+          "tokens_estimated": 754,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/db/index.ts",
+          "tokens_estimated": 181,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/db/schema.ts",
+          "tokens_estimated": 72,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/shared/types.ts",
+          "tokens_estimated": 965,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/services/NotesService.ts",
+          "tokens_estimated": 823,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/services/TaskService.ts",
+          "tokens_estimated": 2935,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/services/UniversityService.ts",
+          "tokens_estimated": 1884,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/services/MoodService.ts",
+          "tokens_estimated": 769,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/services/LifeService.ts",
+          "tokens_estimated": 1803,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/handlers.ts",
+          "tokens_estimated": 101,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/handlers.ts",
+          "tokens_estimated": 827,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/preload/index.ts",
+          "tokens_estimated": 726,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/preload/index.d.ts",
+          "tokens_estimated": 48,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/preload/index.d.ts",
+          "tokens_estimated": 735,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/services/ProjectService.ts",
+          "tokens_estimated": 80,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/main/services/ProjectService.ts",
+          "tokens_estimated": 62,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/shared/types.ts",
+          "tokens_estimated": 64,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/shared/types.ts",
+          "tokens_estimated": 52,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/lib/lifeAreas.ts",
+          "tokens_estimated": 240,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/pages/PlannerPage.tsx",
+          "tokens_estimated": 5312,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/pages/UniversityPage.tsx",
+          "tokens_estimated": 3740,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/pages/JournalPage.tsx",
+          "tokens_estimated": 2280,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/pages/NotesPage.tsx",
+          "tokens_estimated": 2109,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/pages/HobbiesPage.tsx",
+          "tokens_estimated": 1849,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/pages/LifePage.tsx",
+          "tokens_estimated": 2606,
+          "action": "create"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/App.tsx",
+          "tokens_estimated": 104,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/App.tsx",
+          "tokens_estimated": 138,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/components/Sidebar.tsx",
+          "tokens_estimated": 852,
+          "action": "edit"
+        },
+        {
+          "file": "D:/Projects/valute-mz/valute-app/src/renderer/src/pages/UniversityPage.tsx",
+          "tokens_estimated": 28,
+          "action": "edit"
+        }
+      ],
+      "totals": {
+        "input_tokens_estimated": 37534,
+        "output_tokens_estimated": 33780,
+        "reads_count": 12,
+        "writes_count": 31,
+        "repeated_reads_blocked": 1,
+        "anatomy_lookups": 12
+      }
+    }
+  ],
+  "daemon_usage": [],
+  "waste_flags": [],
+  "optimization_report": {
+    "last_generated": null,
+    "patterns": []
+  }
+}
