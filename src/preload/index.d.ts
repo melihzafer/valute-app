@@ -29,8 +29,18 @@ import type {
   CourseIPC,
   AssignmentIPC,
   MoodEntryIPC,
+  HealthEntryIPC,
+  HealthStats,
   LifeOverview,
-  LifeStats
+  LifeStats,
+  LauncherApp,
+  EventIPC,
+  CalendarItem,
+  AIStatus,
+  AIChatMessage,
+  QuickAddResult,
+  CompanionStatus,
+  ClaudeCodeStatus
 } from '../shared/types'
 
 interface API {
@@ -42,6 +52,8 @@ interface API {
     data: Partial<Omit<ProjectIPC, 'createdAt'>>
   ) => Promise<IPCResponse<ProjectIPC>>
   deleteProject: (id: string) => Promise<IPCResponse<void>>
+  projectOpenFolder: (path: string) => Promise<IPCResponse<void>>
+  projectRunCommand: (command: string, cwd?: string) => Promise<IPCResponse<string>>
   getProjectById: (id: string) => Promise<IPCResponse<ProjectIPC | null>>
   updateProjectNotes: (id: string, notes: string) => Promise<IPCResponse<void>>
 
@@ -126,9 +138,51 @@ interface API {
   ) => Promise<IPCResponse<MoodEntryIPC>>
   deleteMoodEntry: (id: string) => Promise<IPCResponse<void>>
 
+  // M4 Health & Wellbeing
+  getHealthEntries: () => Promise<IPCResponse<HealthEntryIPC[]>>
+  saveHealthEntry: (data: Partial<HealthEntryIPC>) => Promise<IPCResponse<HealthEntryIPC>>
+  deleteHealthEntry: (id: string) => Promise<IPCResponse<void>>
+  getHealthStats: () => Promise<IPCResponse<HealthStats>>
+
   // M1/M2 Life dashboard + stats
   getLifeOverview: () => Promise<IPCResponse<LifeOverview>>
   getLifeStats: (days?: number) => Promise<IPCResponse<LifeStats>>
+
+  // M11 Calendar, Reminders & Notifications
+  getEvents: () => Promise<IPCResponse<EventIPC[]>>
+  createEvent: (
+    data: Partial<EventIPC> & { title: string; startTime: string }
+  ) => Promise<IPCResponse<EventIPC>>
+  updateEvent: (id: string, data: Partial<EventIPC>) => Promise<IPCResponse<EventIPC>>
+  deleteEvent: (id: string) => Promise<IPCResponse<void>>
+  getCalendar: (startISO: string, endISO: string) => Promise<IPCResponse<CalendarItem[]>>
+  getUpcoming: (days?: number) => Promise<IPCResponse<CalendarItem[]>>
+  testNotification: () => Promise<IPCResponse<boolean>>
+
+  // M10 AI Assistant
+  aiStatus: () => Promise<IPCResponse<AIStatus>>
+  aiChat: (messages: AIChatMessage[], includeData?: boolean) => Promise<IPCResponse<string>>
+  aiQuickAdd: (text: string) => Promise<IPCResponse<QuickAddResult>>
+  aiWeeklySummary: () => Promise<IPCResponse<string>>
+  aiInsights: () => Promise<IPCResponse<string>>
+
+  // M13 Backup / restore & templates
+  backupToFile: () => Promise<IPCResponse<string | null>>
+  restoreFromFile: () => Promise<IPCResponse<Record<string, number> | null>>
+  applyTemplate: (
+    persona: string
+  ) => Promise<IPCResponse<{ persona: string; created: Record<string, number> }>>
+
+  // M12 Encrypted backup + companion server
+  backupToFileEncrypted: (passphrase: string) => Promise<IPCResponse<string | null>>
+  restoreFromFileEncrypted: (
+    passphrase: string
+  ) => Promise<IPCResponse<Record<string, number> | null>>
+  // Q4 — auto-backup manual trigger (returns the written file path)
+  backupAutoRunNow: () => Promise<IPCResponse<string>>
+  companionStatus: () => Promise<IPCResponse<CompanionStatus>>
+  companionStart: (port?: number) => Promise<IPCResponse<CompanionStatus>>
+  companionStop: () => Promise<IPCResponse<CompanionStatus>>
 
   // Logs
   getLogsByProject: (projectId: string) => Promise<IPCResponse<LogIPC[]>>
@@ -189,6 +243,8 @@ interface API {
     filters?: Array<{ name: string; extensions: string[] }>
   }) => Promise<{ canceled: boolean; filePaths: string[] }>
   openExternal: (url: string) => Promise<IPCResponse<void>>
+  openDirectory: (dirPath: string) => Promise<IPCResponse<void>>
+  openApp: (appPath: string) => Promise<IPCResponse<void>>
 
   // Floating Timer
   openFloatingTimer: () => Promise<IPCResponse<void>>
@@ -230,6 +286,7 @@ interface API {
     data: Partial<Omit<PaymentIPC, 'createdAt'>>
   ) => Promise<IPCResponse<PaymentIPC>>
   deletePayment: (id: string) => Promise<IPCResponse<void>>
+  getAllPayments: () => Promise<IPCResponse<PaymentIPC[]>>
 
   // Settings
   getAllSettings: () => Promise<IPCResponse<AppSettings>>
@@ -271,6 +328,36 @@ interface API {
   // Timer state query for auto-reopen after screenshot
   onQueryTimerStateForReopen: (callback: () => void) => () => void
   sendTimerStateForReopen: (isRunning: boolean) => void
+
+  // App Launcher
+  getLauncherApps: () => Promise<IPCResponse<LauncherApp[]>>
+  setLauncherApps: (apps: LauncherApp[]) => Promise<IPCResponse<void>>
+
+  // GitHub Integration
+  githubGetRepoSummary: (
+    githubUrl: string
+  ) => Promise<IPCResponse<{ openIssuesCount: number; openPrsCount: number }>>
+  githubCreateIssue: (
+    taskId: string,
+    projectId: string,
+    title: string,
+    notes: string | null
+  ) => Promise<IPCResponse<{ issueNumber: number; issueUrl: string }>>
+  githubSyncIssues: (projectId: string) => Promise<IPCResponse<void>>
+
+  // M15 — Project Hub
+  projectOpenTerminal: (path: string, terminal: string) => Promise<IPCResponse<void>>
+  projectRunOpencode: (path: string) => Promise<IPCResponse<{ pid: number }>>
+  projectRunClaudeCode: (path: string, goal?: string) => Promise<IPCResponse<{ pid: number }>>
+  projectStopClaudeCode: () => Promise<IPCResponse<void>>
+  projectGetClaudeStatus: () => Promise<IPCResponse<ClaudeCodeStatus>>
+  telegramSendMessage: (text: string) => Promise<IPCResponse<void>>
+  telegramTestConnection: () => Promise<IPCResponse<boolean>>
+  aiChatOllama: (model: string, messages: AIChatMessage[]) => Promise<IPCResponse<string>>
+  aiChatOpenRouter: (model: string, messages: AIChatMessage[]) => Promise<IPCResponse<string>>
+  aiChatOpenAI: (baseUrl: string, model: string, messages: AIChatMessage[]) => Promise<IPCResponse<string>>
+  aiListOllamaModels: () => Promise<IPCResponse<string[]>>
+  aiListOpenRouterModels: () => Promise<IPCResponse<string[]>>
 }
 
 declare global {

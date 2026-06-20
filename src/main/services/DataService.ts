@@ -2,7 +2,16 @@
 // Database export/import service for backup and restore
 
 import { getDb } from '../db/index'
-import { projects, clients, logs, expenses, invoices, payments, assets, screenshots } from '../db/schema'
+import {
+  projects,
+  clients,
+  logs,
+  expenses,
+  invoices,
+  payments,
+  assets,
+  screenshots
+} from '../db/schema'
 import { app } from 'electron'
 import type { DatabaseExport } from '../../shared/types'
 
@@ -36,7 +45,8 @@ export async function exportDatabase(): Promise<DatabaseExport> {
   const processLogs = logsData.map((l) => ({
     ...l,
     startTime: l.startTime instanceof Date ? l.startTime.toISOString() : String(l.startTime || ''),
-    endTime: l.endTime instanceof Date ? l.endTime.toISOString() : l.endTime ? String(l.endTime) : null,
+    endTime:
+      l.endTime instanceof Date ? l.endTime.toISOString() : l.endTime ? String(l.endTime) : null,
     createdAt: l.createdAt instanceof Date ? l.createdAt.toISOString() : String(l.createdAt || '')
   }))
 

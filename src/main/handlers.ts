@@ -16,7 +16,7 @@ import type {
   ClientWithBalance,
   LedgerEntry
 } from '../shared/types'
-import { broadcastTimerStateToFloating } from './index'
+import { broadcastTimerStateToFloating, createFloatingTimerWindow } from './index'
 import {
   getProjects,
   createProject,
@@ -52,11 +52,25 @@ import * as FocusGuardService from './services/FocusGuardService'
 import * as DailyReportService from './services/DailyReportService'
 import * as ReportService from './services/ReportService'
 import * as IdeaService from './services/IdeaService'
+import { exec } from 'child_process'
 import * as NotesService from './services/NotesService'
 import * as TaskService from './services/TaskService'
 import * as UniversityService from './services/UniversityService'
 import * as MoodService from './services/MoodService'
+import * as HealthService from './services/HealthService'
+import * as GitHubService from './services/GitHubService'
 import * as LifeService from './services/LifeService'
+import * as CalendarService from './services/CalendarService'
+import * as NotificationService from './services/NotificationService'
+import * as AIService from './services/AIService'
+import * as TelegramService from './services/TelegramService'
+import * as ClaudeCodeTracker from './services/ClaudeCodeTracker'
+import * as BackupService from './services/BackupService'
+import * as AutoBackupService from './services/AutoBackupService'
+import * as TemplateService from './services/TemplateService'
+import * as CompanionService from './services/CompanionService'
+import * as AppLauncherService from './services/AppLauncherService'
+import { getDb } from './db/index'
 import type {
   AssetIPC,
   AppSettings,
@@ -65,7 +79,9 @@ import type {
   DailyReportIPC,
   TimeReport,
   IdeaIPC,
-  IdeaStatus
+  IdeaStatus,
+  LauncherApp,
+  ClaudeCodeStatus
 } from '../shared/types'
 
 // Timer state stored in memory (could be persisted if needed)
@@ -161,6 +177,42 @@ export function setupIpcHandlers() {
       return { success: false, error: message }
     }
   })
+
+  ipcMain.handle('project:open-folder', async (_, path: string): Promise<IPCResponse<void>> => {
+    try {
+      if (!path) throw new Error('Path is required')
+      const result = await shell.openPath(path)
+      if (result) throw new Error(result)
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to open folder'
+      console.error('Error in project:open-folder IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle(
+    'project:run-command',
+    async (_, command: string, cwd?: string): Promise<IPCResponse<string>> => {
+      try {
+        if (!command) throw new Error('Command is required')
+        return new Promise((resolve) => {
+          exec(command, { cwd }, (error, stdout, stderr) => {
+            if (error) {
+              console.error('Error running project command:', error)
+              resolve({ success: false, error: error.message || stderr })
+            } else {
+              resolve({ success: true, data: stdout || 'Command executed successfully' })
+            }
+          })
+        })
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to run command'
+        console.error('Error in project:run-command IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
 
   // --- Log Handlers ---
 
@@ -477,6 +529,9 @@ export function setupIpcHandlers() {
         currentProjectName: project?.name || null
       }
 
+      // Open floating timer window immediately
+      createFloatingTimerWindow()
+
       // Start screenshot scheduling if enabled
       ScreenshotService.scheduleNextCapture(projectId, null)
 
@@ -485,6 +540,7 @@ export function setupIpcHandlers() {
 
       // Broadcast the started state to floating window
       broadcastTimerStateToFloating(timerState)
+      saveTimerStateToDisk()
 
       return { success: true, data: timerState }
     }
@@ -508,6 +564,7 @@ export function setupIpcHandlers() {
 
       // Broadcast the paused state to floating window
       broadcastTimerStateToFloating(timerState)
+      saveTimerStateToDisk()
     }
     return { success: true, data: timerState }
   })
@@ -530,6 +587,7 @@ export function setupIpcHandlers() {
 
       // Broadcast the resumed state to floating window
       broadcastTimerStateToFloating(timerState)
+      saveTimerStateToDisk()
     }
     return { success: true, data: timerState }
   })
@@ -581,6 +639,7 @@ export function setupIpcHandlers() {
 
     // Broadcast the reset state to floating window
     broadcastTimerStateToFloating(timerState)
+    saveTimerStateToDisk()
 
     // Return the final state with the total duration for UI feedback
     return {
@@ -671,6 +730,34 @@ export function setupIpcHandlers() {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to open external link'
       console.error('Error in open-external IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle('open-directory', async (_, dirPath: string): Promise<IPCResponse<void>> => {
+    try {
+      const result = await shell.openPath(dirPath)
+      if (result) {
+        return { success: false, error: result }
+      }
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to open directory'
+      console.error('Error in open-directory IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle('open-app', async (_, appPath: string): Promise<IPCResponse<void>> => {
+    try {
+      const result = await shell.openPath(appPath)
+      if (result) {
+        return { success: false, error: result }
+      }
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to open app'
+      console.error('Error in open-app IPC handler:', error)
       return { success: false, error: message }
     }
   })
@@ -1052,9 +1139,50 @@ export function setupIpcHandlers() {
   reg('save-mood-entry', (data) => MoodService.saveMoodEntry(data))
   reg('delete-mood-entry', (id) => MoodService.deleteMoodEntry(id))
 
+  // M4 Health & Wellbeing
+  reg('get-health-entries', () => HealthService.getHealthEntries())
+  reg('save-health-entry', (data) => HealthService.saveHealthEntry(data))
+  reg('delete-health-entry', (id) => HealthService.deleteHealthEntry(id))
+  reg('get-health-stats', () => HealthService.getHealthStats())
+
   // M1/M2 Life dashboard + stats
   reg('get-life-overview', () => LifeService.getLifeOverview())
   reg('get-life-stats', (days) => LifeService.getLifeStats(days))
+
+  // M11 Calendar, Reminders & Notifications
+  reg('get-events', () => CalendarService.getEvents())
+  reg('create-event', (data) => CalendarService.createEvent(data))
+  reg('update-event', (id, data) => CalendarService.updateEvent(id, data))
+  reg('delete-event', (id) => CalendarService.deleteEvent(id))
+  reg('get-calendar', (startISO, endISO) => CalendarService.getCalendar(startISO, endISO))
+  reg('get-upcoming', (days) => CalendarService.getUpcoming(days))
+  reg('test-notification', () => {
+    NotificationService.sendTestNotification()
+    return true
+  })
+
+  // M10 AI Assistant & Smart Automation
+  reg('ai-status', () => AIService.getStatus())
+  reg('ai-chat', (messages, includeData) => AIService.chat(messages, includeData))
+  reg('ai-quick-add', (text) => AIService.quickAdd(text))
+  reg('ai-weekly-summary', () => AIService.weeklySummary())
+  reg('ai-insights', () => AIService.insights())
+
+  // M13 Backup / restore & templates
+  reg('backup-to-file', () => BackupService.backupToFile())
+  reg('restore-from-file', () => BackupService.restoreFromFile())
+  reg('apply-template', (persona) => TemplateService.applyTemplate(persona))
+
+  // M12 Encrypted backup + companion server
+  reg('backup-to-file-encrypted', (passphrase) => BackupService.backupToFileEncrypted(passphrase))
+  reg('restore-from-file-encrypted', (passphrase) =>
+    BackupService.restoreFromFileEncrypted(passphrase)
+  )
+  // Q4 — manual trigger for the scheduled auto-backup (writes to configured folder)
+  reg('backup-auto-run-now', () => AutoBackupService.runAutoBackupNow())
+  reg('companion-status', () => CompanionService.getStatus())
+  reg('companion-start', (port) => CompanionService.start(port))
+  reg('companion-stop', () => CompanionService.stop())
 
   // --- File/Folder Dialog Handler ---
 
@@ -1411,6 +1539,22 @@ export function setupIpcHandlers() {
     }
   })
 
+  ipcMain.handle('get-all-payments', async (): Promise<IPCResponse<PaymentIPC[]>> => {
+    try {
+      const payments = await PaymentService.getAllPayments()
+      const processed: PaymentIPC[] = payments.map((p) => ({
+        ...p,
+        date: p.date instanceof Date ? p.date.toISOString() : String(p.date),
+        createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : String(p.createdAt)
+      }))
+      return { success: true, data: processed }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch all payments'
+      console.error('Error in get-all-payments IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
   // --- Settings Handlers ---
 
   ipcMain.handle('get-all-settings', async (): Promise<IPCResponse<AppSettings>> => {
@@ -1587,4 +1731,442 @@ export function setupIpcHandlers() {
       }
     }
   )
+
+  // --- App Launcher Handlers ---
+
+  ipcMain.handle('get-launcher-apps', async (): Promise<IPCResponse<LauncherApp[]>> => {
+    try {
+      const apps = await AppLauncherService.getApps()
+      return { success: true, data: apps }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to get launcher apps'
+      console.error('Error in get-launcher-apps IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle(
+    'set-launcher-apps',
+    async (_, apps: LauncherApp[]): Promise<IPCResponse<void>> => {
+      try {
+        await AppLauncherService.setApps(apps)
+        return { success: true }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to save launcher apps'
+        console.error('Error in set-launcher-apps IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  // --- GitHub Handlers ---
+
+  ipcMain.handle(
+    'github:get-repo-summary',
+    async (
+      _,
+      githubUrl: string
+    ): Promise<IPCResponse<{ openIssuesCount: number; openPrsCount: number }>> => {
+      try {
+        const summary = await GitHubService.getRepoSummary(githubUrl)
+        return { success: true, data: summary }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to get repo summary'
+        console.error('Error in github:get-repo-summary IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'github:create-issue',
+    async (
+      _,
+      taskId: string,
+      projectId: string,
+      title: string,
+      notes: string | null
+    ): Promise<IPCResponse<{ issueNumber: number; issueUrl: string }>> => {
+      try {
+        const result = await GitHubService.createGithubIssue(taskId, projectId, title, notes)
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to create github issue'
+        console.error('Error in github:create-issue IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle('github:sync-issues', async (_, projectId: string): Promise<IPCResponse<void>> => {
+    try {
+      await GitHubService.syncGithubIssues(projectId)
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to sync github issues'
+      console.error('Error in github:sync-issues IPC handler:', error)
+      return { success: false, error: message }
+    }
+  })
+
+  // ============================================================
+  // M15 — Project Hub Handlers
+  // ============================================================
+
+  ipcMain.handle(
+    'project:open-terminal',
+    async (_, path: string, terminal: string): Promise<IPCResponse<void>> => {
+      try {
+        if (!path) throw new Error('Path is required')
+
+        const term = (terminal || 'auto').toLowerCase()
+        let command: string
+
+        if (term === 'warp') {
+          command = `start "" warp "${path}"`
+        } else if (term === 'wt') {
+          command = `start "" wt -d "${path}"`
+        } else if (term === 'cmd') {
+          command = `start "" cmd /K "cd /d "${path}""`
+        } else if (term === 'pwsh') {
+          command = `start "" pwsh -NoExit -Command "cd "${path}""`
+        } else {
+          // auto: try warp first, then wt, then pwsh, then cmd
+          const fs = require('fs')
+          const warpPath = 'C:\\Users\\melih\\AppData\\Local\\Programs\\warp\\warp.exe'
+          const wtPath = `${process.env.LOCALAPPDATA || ''}\\Microsoft\\WindowsApps\\wt.exe`
+          if (fs.existsSync(warpPath)) {
+            command = `start "" warp "${path}"`
+          } else if (fs.existsSync(wtPath)) {
+            command = `start "" wt -d "${path}"`
+          } else {
+            command = `start "" pwsh -NoExit -Command "cd "${path}""`
+          }
+        }
+
+        const { exec } = require('child_process')
+        exec(command, (err: Error | null) => {
+          if (err) console.error('Failed to open terminal:', err)
+        })
+        return { success: true }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to open terminal'
+        console.error('Error in project:open-terminal IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'project:run-opencode',
+    async (_, projectPath: string): Promise<IPCResponse<{ pid: number }>> => {
+      try {
+        if (!projectPath) throw new Error('Path is required')
+
+        const { exec } = require('child_process')
+        const proc = exec('opencode', { cwd: projectPath }, (err: Error | null, stdout: string, stderr: string) => {
+          if (err) console.error('opencode process error:', err.message)
+        })
+
+        return { success: true, data: { pid: proc.pid || 0 } }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to run opencode'
+        console.error('Error in project:run-opencode IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'project:run-claude-code',
+    async (_, path: string, goal?: string): Promise<IPCResponse<{ pid: number }>> => {
+      try {
+        const result = await ClaudeCodeTracker.startClaudeCode(path, goal)
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to run Claude Code'
+        console.error('Error in project:run-claude-code IPC handler:', error)
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle('project:stop-claude-code', async (): Promise<IPCResponse<void>> => {
+    try {
+      await ClaudeCodeTracker.stopClaudeCode()
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to stop Claude Code'
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle('project:get-claude-status', async (): Promise<IPCResponse<ClaudeCodeStatus>> => {
+    try {
+      const status = ClaudeCodeTracker.getStatus()
+      return { success: true, data: status }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to get Claude Code status'
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle('telegram:send-message', async (_, text: string): Promise<IPCResponse<void>> => {
+    try {
+      await TelegramService.sendMessage(text)
+      return { success: true }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to send Telegram message'
+      return { success: false, error: message }
+    }
+  })
+
+  ipcMain.handle('telegram:test-connection', async (): Promise<IPCResponse<boolean>> => {
+    try {
+      const ok = await TelegramService.testConnection()
+      return { success: true, data: ok }
+    } catch {
+      return { success: true, data: false }
+    }
+  })
+
+  ipcMain.handle(
+    'ai:chat-ollama',
+    async (_, model: string, messages: unknown[]): Promise<IPCResponse<string>> => {
+      try {
+        const result = await AIService.ollamaChat(model, messages as any)
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Ollama chat failed'
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'ai:chat-openrouter',
+    async (_, model: string, messages: unknown[]): Promise<IPCResponse<string>> => {
+      try {
+        const result = await AIService.openRouterChat(model, messages as any)
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'OpenRouter chat failed'
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'ai:chat-openai',
+    async (_, baseUrl: string, model: string, messages: unknown[]): Promise<IPCResponse<string>> => {
+      try {
+        const result = await AIService.openaiChat(baseUrl, model, messages as any)
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'OpenAI-compatible chat failed'
+        return { success: false, error: message }
+      }
+    }
+  )
+
+  ipcMain.handle('ai:list-ollama-models', async (): Promise<IPCResponse<string[]>> => {
+    try {
+      const models = await AIService.listOllamaModels()
+      return { success: true, data: models }
+    } catch {
+      return { success: true, data: [] }
+    }
+  })
+
+  ipcMain.handle('ai:list-openrouter-models', async (): Promise<IPCResponse<string[]>> => {
+    try {
+      const models = await AIService.listOpenRouterModels()
+      return { success: true, data: models }
+    } catch {
+      return { success: true, data: [] }
+    }
+  })
 }
+
+export async function toggleTimerMain(): Promise<void> {
+  const db = getDb()
+  const { eq, desc } = require('drizzle-orm')
+  const schema = require('./db/schema')
+  const { getProjects } = require('./services/ProjectService')
+  const { broadcastTimerStateToFloating } = require('./index')
+  const ScreenshotService = require('./services/ScreenshotService')
+  const FocusGuardService = require('./services/FocusGuardService')
+
+  const { BrowserWindow } = require('electron')
+  const getMainWindow = () => {
+    const wins = BrowserWindow.getAllWindows()
+    return wins.find((w) => !w.isDestroyed() && w.resizable && w.minimizable) || wins[0] || null
+  }
+  const mainWindow = getMainWindow()
+
+  if (timerState.isRunning) {
+    console.log('[Hotkey] Pausing timer...')
+    if (timerState.isRunning && timerState.startTime) {
+      const elapsed = Math.floor((Date.now() - timerState.startTime) / 1000)
+      timerState = {
+        ...timerState,
+        isRunning: false,
+        accumulatedTime: timerState.accumulatedTime + elapsed,
+        startTime: null
+      }
+      ScreenshotService.cancelScheduledCapture()
+      FocusGuardService.pauseFocusTracking()
+      broadcastTimerStateToFloating(timerState)
+
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('timer-state-changed', timerState)
+      }
+    }
+  } else {
+    console.log('[Hotkey] Starting/Resuming timer...')
+    let projectId = timerState.projectId
+    if (!projectId) {
+      const lastLog = db
+        .select()
+        .from(schema.logs)
+        .orderBy(desc(schema.logs.startTime))
+        .limit(1)
+        .get()
+      if (lastLog) {
+        projectId = lastLog.projectId
+      } else {
+        const firstProj = db
+          .select()
+          .from(schema.projects)
+          .where(eq(schema.projects.archived, false))
+          .limit(1)
+          .get()
+        if (firstProj) {
+          projectId = firstProj.id
+        }
+      }
+    }
+
+    if (projectId) {
+      const projectsList = await getProjects()
+      const project = projectsList.find((p) => p.id === projectId)
+
+      timerState = {
+        ...timerState,
+        isRunning: true,
+        startTime: Date.now(),
+        projectId,
+        currentProjectName: project?.name || null
+      }
+      ScreenshotService.scheduleNextCapture(projectId, null)
+      FocusGuardService.startFocusTracking(project?.name || 'Unknown Project')
+      broadcastTimerStateToFloating(timerState)
+
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('timer-state-changed', timerState)
+      }
+    }
+  }
+}
+
+export function getTimerStateMain(): TimerState {
+  if (timerState.isRunning && timerState.startTime) {
+    const elapsed = Math.floor((Date.now() - timerState.startTime) / 1000)
+    return {
+      ...timerState,
+      elapsedSeconds: timerState.accumulatedTime + elapsed
+    }
+  }
+  return timerState
+}
+
+export async function startProjectTimerMain(projectId: string): Promise<void> {
+  const { getProjects } = require('./services/ProjectService')
+  const { broadcastTimerStateToFloating } = require('./index')
+  const ScreenshotService = require('./services/ScreenshotService')
+  const FocusGuardService = require('./services/FocusGuardService')
+
+  const { BrowserWindow } = require('electron')
+  const getMainWindow = () => {
+    const wins = BrowserWindow.getAllWindows()
+    return wins.find((w) => !w.isDestroyed() && w.resizable && w.minimizable) || wins[0] || null
+  }
+  const mainWindow = getMainWindow()
+
+  if (timerState.isRunning) {
+    ScreenshotService.cancelScheduledCapture()
+    FocusGuardService.stopFocusTracking()
+  }
+
+  const projectsList = await getProjects()
+  const project = projectsList.find((p) => p.id === projectId)
+
+  timerState = {
+    isRunning: true,
+    elapsedSeconds: 0,
+    accumulatedTime: 0,
+    startTime: Date.now(),
+    projectId,
+    description: 'Tray menu session',
+    currentProjectName: project?.name || null
+  }
+
+  ScreenshotService.scheduleNextCapture(projectId, null)
+  FocusGuardService.startFocusTracking(project?.name || 'Unknown Project')
+  broadcastTimerStateToFloating(timerState)
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('timer-state-changed', timerState)
+  }
+  saveTimerStateToDisk()
+}
+
+export function saveTimerStateToDisk(): void {
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    const { app } = require('electron')
+    const p = path.join(app.getPath('userData'), 'timer-state.json')
+    fs.writeFileSync(p, JSON.stringify(timerState, null, 2))
+  } catch (err) {
+    console.error('Failed to save timer state to disk:', err)
+  }
+}
+
+export function loadTimerStateFromDisk(): void {
+  try {
+    const fs = require('fs')
+    const path = require('path')
+    const { app } = require('electron')
+    const p = path.join(app.getPath('userData'), 'timer-state.json')
+    if (fs.existsSync(p)) {
+      const data = JSON.parse(fs.readFileSync(p, 'utf8'))
+      if (data.isRunning && data.startTime) {
+        timerState = {
+          ...data,
+          startTime: Date.now()
+        }
+        console.log('[Timer] Auto-resumed running timer from disk.')
+      } else {
+        timerState = {
+          ...data,
+          isRunning: false,
+          startTime: null
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load timer state from disk:', err)
+  }
+}
+
+export function adjustTimerStateTime(secondsToSubtract: number): void {
+  timerState = {
+    ...timerState,
+    accumulatedTime: Math.max(0, timerState.accumulatedTime - secondsToSubtract)
+  }
+  saveTimerStateToDisk()
+}
+
+// Re-export for use by index.ts (avoids dynamic require issues in bundled output)
+export { getProjects } from './services/ProjectService'

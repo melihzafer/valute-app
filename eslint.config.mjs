@@ -46,7 +46,18 @@ export default defineConfig(
       'react-hooks/rules-of-hooks': 'warn',
       'react-hooks/exhaustive-deps': 'warn',
       'react-hooks/purity': 'warn',
-      'react-hooks/set-state-in-effect': 'warn'
+      'react-hooks/set-state-in-effect': 'warn',
+      // H1 — bug-022 money divisor guard. cents↔dollars dönüşümü her zaman
+      // src/shared/money.ts içindeki toCents/fromCents üzerinden olmalı; /10000
+      // yasak (30 → 0.30 olarak kaydedilmiştı). Refs: GROWTH_IDEAS H1, buglog bug-022.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "BinaryExpression[operator='/'][right.type='Literal'][right.value=10000]",
+          message:
+            'Division by 10000 is forbidden (bug-022). Use toCents/fromCents from src/shared/money.ts.'
+        }
+      ]
     }
   },
   eslintConfigPrettier

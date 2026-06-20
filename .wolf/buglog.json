@@ -95,7 +95,7 @@
       ],
       "related_bugs": [],
       "occurrences": 2,
-      "last_seen": "2026-06-12T17:01:54.720Z"
+      "last_seen": "2026-06-12T17:01:54.72Z"
     },
     {
       "id": "bug-007",
@@ -223,7 +223,7 @@
       ],
       "related_bugs": [],
       "occurrences": 2,
-      "last_seen": "2026-06-12T17:06:10.070Z"
+      "last_seen": "2026-06-12T17:06:10.07Z"
     },
     {
       "id": "bug-015",
@@ -320,6 +320,892 @@
       "related_bugs": [],
       "occurrences": 1,
       "last_seen": "2026-06-12T17:33:17.854Z"
+    },
+    {
+      "id": "bug-021",
+      "timestamp": "2026-06-12T20:45:00Z",
+      "error_message": "User: 'Cannot update info app. the currency input doesn't work properly. when I save something first test then save and then give a notification in the right bottom'",
+      "file": "src/renderer/src/pages/SettingsPage.tsx",
+      "root_cause": "Settings auto-saved on every onChange with no Save button and no user feedback. Users could not tell that changes were persisted, and there was no toast/notification system to confirm saves.",
+      "fix": "Refactored SettingsPage to use local draft state, added a sticky Save/Discard bar that appears only when the form is dirty, added an 'Unsaved changes' badge, and added a global toast system (useToastStore + Toaster mounted in Layout). Settings now save on explicit Save click and show a 'Settings saved' toast in the bottom right.",
+      "tags": [
+        "user-reported",
+        "ux",
+        "settings",
+        "toast",
+        "save-button"
+      ],
+      "related_bugs": [
+        "bug-022"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T20:45:00Z"
+    },
+    {
+      "id": "bug-022",
+      "timestamp": "2026-06-12T20:45:00Z",
+      "error_message": "User: 'rate I paste 30 it saves it as 0.30'",
+      "file": "src/renderer/src/components/CreateProjectForm.tsx + EditProjectForm.tsx",
+      "root_cause": "Project forms initialized rate/fixedPrice from cents with `/10000` instead of `/100`. Saving used `*100`, so a $30 input (3000 cents) round-tripped through 0.30 in the form and re-saved as 30 cents ($0.30).",
+      "fix": "Changed reads from `/10000` to `/100` in both CreateProjectForm.tsx and EditProjectForm.tsx. The schema (hourlyRate/fixedPrice in cents) and write path (Math.round(x * 100)) were already correct.",
+      "tags": [
+        "user-reported",
+        "unit-conversion",
+        "cents",
+        "project-form"
+      ],
+      "related_bugs": [
+        "bug-023"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T20:45:00Z"
+    },
+    {
+      "id": "bug-023",
+      "timestamp": "2026-06-12T20:45:00Z",
+      "error_message": "User: 'the currency input doesn't work properly'",
+      "file": "src/renderer/src/components/CreateProjectForm.tsx + EditProjectForm.tsx",
+      "root_cause": "Currency dropdown in project forms was hardcoded to ['USD', 'EUR', 'GBP', 'TRY'] — missing CAD, AUD, JPY that are supported in AppSettings.Currency. If a user set their default currency to JPY in settings, the project form's currency select had no JPY option.",
+      "fix": "Replaced the 4-currency hardcoded list with the full 7-currency list (USD/EUR/TRY/GBP/CAD/AUD/JPY) in both forms. Default for new projects now reads from useSettingsStore so the project picks up the user's chosen default currency.",
+      "tags": [
+        "user-reported",
+        "currency",
+        "options",
+        "project-form"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T20:45:00Z"
+    },
+    {
+      "id": "bug-024",
+      "timestamp": "2026-06-12T21:05:00Z",
+      "error_message": "User: 'i want to type in the 15 not 1500 for 15 euros. 15.50 is 15.50 not 1550 is 15.5'",
+      "file": "src/renderer/src/components/ui/MoneyInput.tsx (new) + CreateProjectForm/EditProjectForm",
+      "root_cause": "After fixing the /10000 cents bug, the rate/fixedPrice/unitRate fields used a bare <input type=\"number\"> which (a) didn't make the unit (euros, not cents) obvious, and (b) stripped trailing zeros — typing 15.50 displayed as 15.5. The user wanted natural currency entry (type 15 for €15) with 15.50 preserved.",
+      "fix": "Created a small MoneyInput component (text input + inputMode=decimal) that preserves the user's typed string. Below the field it shows a live '= X cents' preview so the user can see exactly what is being saved. Wired it into hourly/fixed/unit/subscription rate fields in both CreateProjectForm and EditProjectForm. typecheck clean.",
+      "tags": [
+        "user-reported",
+        "ux",
+        "input",
+        "currency",
+        "money-input"
+      ],
+      "related_bugs": [
+        "bug-022"
+      ],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T21:05:00Z"
+    },
+    {
+      "id": "bug-025",
+      "timestamp": "2026-06-12T21:56:32.66Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/pages/SettingsPage.tsx",
+      "root_cause": "Had 'focus'",
+      "fix": "Changed to 'appearance'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T21:56:32.661Z"
+    },
+    {
+      "id": "bug-026",
+      "timestamp": "2026-06-12T21:56:34.383Z",
+      "error_message": "CSS fix: id",
+      "file": "src/renderer/src/pages/SettingsPage.tsx",
+      "root_cause": "id: 'general', label: 'General', icon: <Globe className=\"h-4 w-4\" /> → 'appearance', label: 'Appearance', icon: <Palette className=\"h-4 w-4\" />",
+      "fix": "Changed id: 'general', label: 'General', icon: <Globe className=\"h-4 w-4\" /> → 'appearance', label: 'Appearance', icon: <Palette className=\"h-4 w-4\" />",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T21:56:34.383Z"
+    },
+    {
+      "id": "bug-027",
+      "timestamp": "2026-06-12T21:56:55.824Z",
+      "error_message": "Type error",
+      "file": "src/renderer/src/pages/SettingsPage.tsx",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T21:56:55.824Z"
+    },
+    {
+      "id": "bug-028",
+      "timestamp": "2026-06-12T21:59:10.565Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "src/renderer/src/components/TimerWidget.tsx",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T21:59:10.565Z"
+    },
+    {
+      "id": "bug-029",
+      "timestamp": "2026-06-12T21:59:22.706Z",
+      "error_message": "Type error",
+      "file": "src/renderer/src/components/TimerWidget.tsx",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T21:59:22.706Z"
+    },
+    {
+      "occurrences": 1,
+      "error_message": "Timer display frozen on all pages except Finance dashboard",
+      "fix": "Moved bootstrap (loadTimerState, fetchProjects, loadSettings) and the global tick interval into Layout",
+      "related_bugs": [],
+      "id": "bug-030",
+      "file": "src/renderer/src/components/Layout.tsx",
+      "timestamp": "2026-06-13T00:00:00Z",
+      "root_cause": "1s tick interval + loadTimerState + fetchProjects lived only in DashboardPage, never in Layout",
+      "last_seen": "2026-06-13T00:00:00Z",
+      "tags": [
+        "timer",
+        "wiring",
+        "layout"
+      ]
+    },
+    {
+      "occurrences": 1,
+      "error_message": "Dashboard always shows USD regardless of settings",
+      "fix": "Read currency from useSettingsStore; settings now loaded app-wide in Layout",
+      "related_bugs": [],
+      "id": "bug-031",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "timestamp": "2026-06-13T00:00:00Z",
+      "root_cause": "currency hardcoded as useState('USD') instead of settings.general.currency",
+      "last_seen": "2026-06-13T00:00:00Z",
+      "tags": [
+        "currency",
+        "settings",
+        "wiring"
+      ]
+    },
+    {
+      "id": "bug-032",
+      "timestamp": "2026-06-12T22:08:44.626Z",
+      "error_message": "CSS fix: title, path",
+      "file": "src/renderer/src/components/Sidebar.tsx",
+      "root_cause": "title: 'Work', → 'Life',; path: '/ideas', label: 'Ideas', icon: Lightbulb → '/hobbies', label: 'Hobbies', icon: Palette",
+      "fix": "Changed title: 'Work', → 'Life',; path: '/ideas', label: 'Ideas', icon: Lightbulb → '/hobbies', label: 'Hobbies', icon: Palette",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:08:44.626Z"
+    },
+    {
+      "id": "bug-033",
+      "timestamp": "2026-06-12T22:10:26.625Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→8 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:10:26.625Z"
+    },
+    {
+      "id": "bug-034",
+      "timestamp": "2026-06-12T22:10:33.664Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/pages/FinancePage.tsx",
+      "root_cause": "Had \"grid gap-4 md:grid-cols-2 lg:grid-cols-4\"",
+      "fix": "Changed to \"finance\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:10:33.664Z"
+    },
+    {
+      "id": "bug-035",
+      "timestamp": "2026-06-12T22:12:24.304Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/pages/ProjectDetailsPage.tsx",
+      "root_cause": "Had 'logs'",
+      "fix": "Changed to 'todos'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:12:24.304Z"
+    },
+    {
+      "id": "bug-036",
+      "timestamp": "2026-06-12T22:14:24.807Z",
+      "error_message": "Significant refactor of ",
+      "file": "docs/ROADMAP.md",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 3→8 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:14:24.807Z"
+    },
+    {
+      "id": "bug-037",
+      "timestamp": "2026-06-12T22:23:32.274Z",
+      "error_message": "Wrong reference: useUIStore should be fontScale",
+      "file": "src/renderer/src/components/Layout.tsx",
+      "root_cause": "Used \"useUIStore\" instead of \"fontScale\"",
+      "fix": "Changed useUIStore → fontScale",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:23:32.274Z"
+    },
+    {
+      "id": "bug-038",
+      "timestamp": "2026-06-12T22:23:35.25Z",
+      "error_message": "Type error",
+      "file": "src/renderer/src/components/Layout.tsx",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:23:35.25Z"
+    },
+    {
+      "id": "bug-039",
+      "timestamp": "2026-06-12T22:24:13.302Z",
+      "error_message": "CSS fix: ThemeToggle",
+      "file": "src/renderer/src/components/ThemeToggle.tsx",
+      "root_cause": "ThemeToggle: React.FC = () => { → React.FC<{ compact?: boolean",
+      "fix": "Changed ThemeToggle: React.FC = () => { → React.FC<{ compact?: boolean",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:24:13.302Z"
+    },
+    {
+      "id": "bug-040",
+      "timestamp": "2026-06-12T22:24:36.764Z",
+      "error_message": "Type error",
+      "file": "src/renderer/src/store/useDashboardStore.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:24:36.764Z"
+    },
+    {
+      "id": "bug-041",
+      "timestamp": "2026-06-12T22:24:59.261Z",
+      "error_message": "CSS fix: quickActions",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "quickActions: 'lg:col-span-4' → 'lg:col-span-4',",
+      "fix": "Changed quickActions: 'lg:col-span-4' → 'lg:col-span-4',",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:24:59.261Z"
+    },
+    {
+      "id": "bug-042",
+      "timestamp": "2026-06-12T22:25:18.644Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:25:18.644Z"
+    },
+    {
+      "id": "bug-043",
+      "timestamp": "2026-06-12T22:25:34.492Z",
+      "error_message": "CSS fix: ProjectTodos",
+      "file": "src/renderer/src/components/ProjectTodos.tsx",
+      "root_cause": "ProjectTodos: React.FC<ProjectTodosProps> = ({ projectId → React.FC<ProjectTodosProps> = ({ projectId, embedded = false",
+      "fix": "Changed ProjectTodos: React.FC<ProjectTodosProps> = ({ projectId → React.FC<ProjectTodosProps> = ({ projectId, embedded = false",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:25:34.492Z"
+    },
+    {
+      "id": "bug-044",
+      "timestamp": "2026-06-12T22:25:48.302Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/renderer/src/components/ProjectTodos.tsx",
+      "root_cause": "2 lines replaced/restructured",
+      "fix": "Rewrote 14→16 lines (2 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:25:48.302Z"
+    },
+    {
+      "id": "bug-045",
+      "timestamp": "2026-06-12T22:26:06.384Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/pages/ProjectsPage.tsx",
+      "root_cause": "Had \"flex flex-wrap gap-2 mb-6\"",
+      "fix": "Changed to \"projects\"",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:26:06.384Z"
+    },
+    {
+      "id": "bug-046",
+      "timestamp": "2026-06-12T22:26:28.148Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/pages/ClientsPage.tsx",
+      "root_cause": "Had '../../../shared/types'",
+      "fix": "Changed to '../components/ui/Movable'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T22:26:28.148Z"
+    },
+    {
+      "file": "src/preload/index.ts",
+      "error_message": "TypeError: window.api.getAllPayments is not a function (FinancePage)",
+      "timestamp": "2026-06-13T12:00:00Z",
+      "id": "bug-032",
+      "last_seen": "2026-06-13T12:00:00Z",
+      "fix": "No code change needed — restart npm run dev. Rule: after adding/changing anything in src/preload or src/main, always restart the dev app",
+      "occurrences": 1,
+      "related_bugs": [],
+      "tags": [
+        "electron",
+        "preload",
+        "ipc",
+        "hot-reload",
+        "dev-workflow"
+      ],
+      "root_cause": "Preload and main-process code do not hot-reload in electron-vite dev; the running app was started before the new IPC (get-all-payments) was added, so the renderer called a preload API that did not exist in the running instance"
+    },
+    {
+      "id": "bug-048",
+      "timestamp": "2026-06-12T23:41:49.977Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/store/useUIStore.ts",
+      "root_cause": "Had 'dark'",
+      "fix": "Changed to 'void'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T23:41:49.977Z"
+    },
+    {
+      "id": "bug-049",
+      "timestamp": "2026-06-12T23:42:23.129Z",
+      "error_message": "CSS fix: --primary, --primary-foreground",
+      "file": "src/renderer/src/index.css",
+      "root_cause": "--primary: 247 60% 70% → 258 92% 68%; --primary-foreground: 222 25% 4% → 0 0% 100%",
+      "fix": "Changed --primary: 247 60% 70% → 258 92% 68%; --primary-foreground: 222 25% 4% → 0 0% 100%",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "css"
+      ],
+      "related_bugs": [],
+      "occurrences": 2,
+      "last_seen": "2026-06-12T23:42:24.478Z"
+    },
+    {
+      "id": "bug-050",
+      "timestamp": "2026-06-12T23:42:26.489Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/lib/themes.ts",
+      "root_cause": "Had '247 60% 70%'",
+      "fix": "Changed to '258 92% 68%'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 4,
+      "last_seen": "2026-06-12T23:42:31.689Z"
+    },
+    {
+      "id": "bug-051",
+      "timestamp": "2026-06-12T23:44:29.196Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "24 lines replaced/restructured",
+      "fix": "Rewrote 25→38 lines (24 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T23:44:29.196Z"
+    },
+    {
+      "id": "bug-052",
+      "timestamp": "2026-06-12T23:44:36.364Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T23:44:36.364Z"
+    },
+    {
+      "id": "bug-053",
+      "timestamp": "2026-06-12T23:44:40.585Z",
+      "error_message": "Type error",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-12T23:44:40.585Z"
+    },
+    {
+      "id": "bug-054",
+      "timestamp": "2026-06-13T12:04:56.110Z",
+      "error_message": "Wrong reference: FileText should be BookOpen",
+      "file": "src/renderer/src/components/Sidebar.tsx",
+      "root_cause": "Used \"FileText\" instead of \"BookOpen\"",
+      "fix": "Changed FileText → BookOpen",
+      "tags": [
+        "auto-detected",
+        "wrong-reference",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:04:56.110Z"
+    },
+    {
+      "id": "bug-055",
+      "timestamp": "2026-06-13T12:06:36.586Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/pages/NotFoundPage.tsx",
+      "root_cause": "Had './ui/card'",
+      "fix": "Changed to '../components/ui/card'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:06:36.586Z"
+    },
+    {
+      "id": "bug-056",
+      "timestamp": "2026-06-13T12:06:42.675Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/main/services/AIService.ts",
+      "root_cause": "Had './ProjectService'",
+      "fix": "Changed to './NotesService'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:06:42.675Z"
+    },
+    {
+      "id": "bug-057",
+      "timestamp": "2026-06-13T12:07:31.900Z",
+      "error_message": "Function not marked async",
+      "file": "src/renderer/src/pages/FinancePage.tsx",
+      "root_cause": "Function uses await but wasn't declared async",
+      "fix": "Added async modifier",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:07:31.900Z"
+    },
+    {
+      "id": "bug-058",
+      "timestamp": "2026-06-13T12:09:23.246Z",
+      "error_message": "Type error",
+      "file": "src/main/db/index.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:09:23.246Z"
+    },
+    {
+      "id": "bug-059",
+      "timestamp": "2026-06-13T12:13:17.759Z",
+      "error_message": "Missing await",
+      "file": "src/renderer/src/pages/SettingsPage.tsx",
+      "root_cause": "Async call without await — returned Promise instead of value",
+      "fix": "Added await to async call",
+      "tags": [
+        "auto-detected",
+        "async-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:13:17.759Z"
+    },
+    {
+      "id": "bug-060",
+      "timestamp": "2026-06-13T12:14:48.151Z",
+      "error_message": "Missing error handling in function",
+      "file": "src/main/services/BackupService.ts",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:14:48.151Z"
+    },
+    {
+      "id": "bug-061",
+      "timestamp": "2026-06-13T12:16:54.444Z",
+      "error_message": "Type error",
+      "file": "src/main/index.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:16:54.444Z"
+    },
+    {
+      "id": "bug-062",
+      "timestamp": "2026-06-13T12:17:47.265Z",
+      "error_message": "Incorrect value in code",
+      "file": "src/renderer/src/pages/SettingsPage.tsx",
+      "root_cause": "Had '../../../shared/types'",
+      "fix": "Changed to '../components/DataSyncSection'",
+      "tags": [
+        "auto-detected",
+        "wrong-value",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:17:47.265Z"
+    },
+    {
+      "id": "bug-063",
+      "timestamp": "2026-06-13T12:34:32.934Z",
+      "error_message": "Type error",
+      "file": "src/renderer/src/store/useDashboardStore.ts",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:34:32.934Z"
+    },
+    {
+      "id": "bug-064",
+      "timestamp": "2026-06-13T12:34:48.802Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/renderer/src/store/useDashboardStore.ts",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:34:48.802Z"
+    },
+    {
+      "id": "bug-065",
+      "timestamp": "2026-06-13T12:34:57.063Z",
+      "error_message": "Wrong return value",
+      "file": "src/renderer/src/store/useDashboardStore.ts",
+      "root_cause": "Was returning: { ...merged, order, editMode: false }",
+      "fix": "Now returns: { ...merged, order, customPresets, editMode: false",
+      "tags": [
+        "auto-detected",
+        "return-value",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:34:57.063Z"
+    },
+    {
+      "id": "bug-066",
+      "timestamp": "2026-06-13T12:35:41.458Z",
+      "error_message": "Missing guard clause",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "No early return/throw for edge case: !v",
+      "fix": "Added guard clause: if (!v)",
+      "tags": [
+        "auto-detected",
+        "guard-clause",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:35:41.458Z"
+    },
+    {
+      "id": "bug-067",
+      "timestamp": "2026-06-13T12:41:09.745Z",
+      "error_message": "Type error",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "Missing or incorrect type annotation",
+      "fix": "Added type assertion/annotation",
+      "tags": [
+        "auto-detected",
+        "type-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:41:09.745Z"
+    },
+    {
+      "id": "bug-068",
+      "timestamp": "2026-06-13T12:41:22.642Z",
+      "error_message": "Missing error handling in unknown",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "Code path had no error handling — exceptions would propagate uncaught",
+      "fix": "Added try/catch block",
+      "tags": [
+        "auto-detected",
+        "error-handling",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:41:22.642Z"
+    },
+    {
+      "id": "bug-069",
+      "timestamp": "2026-06-13T12:42:11.179Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:42:11.179Z"
+    },
+    {
+      "id": "bug-070",
+      "timestamp": "2026-06-13T12:47:59.138Z",
+      "error_message": "Null/undefined access in ",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "Property access on potentially null/undefined value",
+      "fix": "Added null safety (optional chaining or null check)",
+      "tags": [
+        "auto-detected",
+        "null-safety",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:47:59.138Z"
+    },
+    {
+      "id": "bug-071",
+      "timestamp": "2026-06-13T12:48:30.988Z",
+      "error_message": "CSS fix: hover",
+      "file": "src/renderer/src/pages/DashboardPage.tsx",
+      "root_cause": "hover: text-primary p-1\" → text-emerald-400 p-1\"",
+      "fix": "Changed hover: text-primary p-1\" → text-emerald-400 p-1\"",
+      "tags": [
+        "auto-detected",
+        "style-fix",
+        "tsx"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-13T12:48:30.988Z"
+    },
+    {
+      "id": "bug-072",
+      "timestamp": "2026-06-17T14:11:47.286Z",
+      "error_message": "Significant refactor of ",
+      "file": ".claude/CLAUDE.md",
+      "root_cause": "19 lines replaced/restructured",
+      "fix": "Rewrote 31→35 lines (19 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "md"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-17T14:11:47.286Z"
+    },
+    {
+      "id": "bug-073",
+      "timestamp": "2026-06-17T14:35:14.501Z",
+      "error_message": "Significant refactor of ",
+      "file": "src/main/handlers.ts",
+      "root_cause": "8 lines replaced/restructured",
+      "fix": "Rewrote 12→5 lines (8 removed)",
+      "tags": [
+        "auto-detected",
+        "refactor",
+        "ts"
+      ],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-17T14:35:14.501Z"
+    },
+    {
+      "id": "bug-074",
+      "timestamp": "2026-06-17T14:51:00.000Z",
+      "error_message": "tsc --noEmit: 3 errors blocking npm run build/typecheck. handlers.ts(1980) unused BrowserWindow; index.ts(403) Project[] not assignable to never[]; UniversityService.ts(195) undefined not assignable to number|null",
+      "file": "src/main/handlers.ts, src/main/index.ts, src/main/services/UniversityService.ts, src/shared/grades.ts",
+      "root_cause": "Pre-existing errors in uncommitted M10-M13 work. (1) dead require('electron') copy-paste left in adjustTimerStateTime. (2) `let projects = []` inferred never[] then assigned Project[]. (3) creditWeightedAverage typed currentGrade as number|null but CourseIPC.currentGrade is number|null|undefined.",
+      "fix": "Removed dead require line; annotated `let projects: Awaited<ReturnType<typeof getProjects>> = []`; widened creditWeightedAverage param type to number|null|undefined (function already filters with != null, so behavior unchanged).",
+      "tags": ["typecheck", "type-fix", "build-blocker", "grades", "money"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-17T14:51:00.000Z"
+    },
+    {
+      "id": "bug-075",
+      "timestamp": "2026-06-17T14:44:05.978Z",
+      "error_message": "npm install -D vitest -> ERESOLVE could not resolve: react-day-picker@8.10.1 wants date-fns@^2||^3 but project pins date-fns@4.1.0",
+      "file": "package.json",
+      "root_cause": "Pre-existing peer dependency conflict. react-day-picker@8.10.1 peer dep does not allow date-fns@4. Plain npm install fails with ERESOLVE.",
+      "fix": "Use `npm install -D vitest --legacy-peer-deps`. The existing node_modules were installed this way. Do NOT run npm audit fix --force (would break the tree).",
+      "tags": ["npm", "eresolve", "peer-deps", "install", "vitest"],
+      "related_bugs": [],
+      "occurrences": 1,
+      "last_seen": "2026-06-17T14:44:05.978Z"
     }
   ]
 }

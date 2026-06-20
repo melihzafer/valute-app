@@ -1,7 +1,7 @@
 // src/renderer/src/components/clients/RecordPaymentDialog.tsx
 
 import React, { useState } from 'react'
-import { X, DollarSign } from 'lucide-react'
+import { X, DollarSign, Calendar as CalendarIcon } from 'lucide-react'
 import { useClientStore } from '../../store/useClientStore'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -94,10 +94,10 @@ export const RecordPaymentDialog: React.FC<RecordPaymentDialogProps> = ({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50" onClick={handleClose} />
-      <div className="relative bg-card border border-border rounded-lg shadow-lg w-full max-w-md mx-4">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="relative bg-card border border-border rounded-lg shadow-lg w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
           <div>
             <h2 className="text-lg font-semibold">Record Payment</h2>
             <p className="text-sm text-muted-foreground">From {clientName}</p>
@@ -107,7 +107,7 @@ export const RecordPaymentDialog: React.FC<RecordPaymentDialogProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 space-y-4 overflow-y-auto flex-1">
           {error && (
             <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">{error}</div>
           )}
@@ -132,13 +132,24 @@ export const RecordPaymentDialog: React.FC<RecordPaymentDialogProps> = ({
 
           <div className="space-y-2">
             <Label htmlFor="date">Date *</Label>
-            <Input
-              id="date"
-              type="date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              required
-            />
+            <div className="relative">
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                onClick={(e) => {
+                  try {
+                    e.currentTarget.showPicker()
+                  } catch {}
+                }}
+                required
+                className="pr-10 cursor-pointer"
+              />
+              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-muted-foreground">
+                <CalendarIcon className="h-4 w-4" />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -146,8 +157,10 @@ export const RecordPaymentDialog: React.FC<RecordPaymentDialogProps> = ({
             <select
               id="method"
               value={formData.method}
-              onChange={(e) => setFormData({ ...formData, method: e.target.value as PaymentMethod })}
-              className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm"
+              onChange={(e) =>
+                setFormData({ ...formData, method: e.target.value as PaymentMethod })
+              }
+              className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             >
               {paymentMethods.map((method) => (
                 <option key={method.value} value={method.value}>
@@ -174,11 +187,11 @@ export const RecordPaymentDialog: React.FC<RecordPaymentDialogProps> = ({
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Additional notes about this payment..."
-              className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm resize-none h-20"
+              className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm resize-none h-20 text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-2 pt-4 border-t border-border flex-shrink-0">
             <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>

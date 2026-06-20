@@ -58,7 +58,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         const merged: AppSettings = {
           general: { ...current.general, ...newSettings.general },
           focus: { ...current.focus, ...newSettings.focus },
-          screenshot: { ...current.screenshot, ...newSettings.screenshot }
+          screenshot: { ...current.screenshot, ...newSettings.screenshot },
+          github: { ...current.github, ...newSettings.github }
         }
         set({ settings: merged, isLoading: false })
       } else {

@@ -24,14 +24,9 @@ export async function setSetting(key: string, value: string): Promise<void> {
   const existing = db.select().from(settings).where(eq(settings.key, key)).get()
 
   if (existing) {
-    db.update(settings)
-      .set({ value, updatedAt: new Date() })
-      .where(eq(settings.key, key))
-      .run()
+    db.update(settings).set({ value, updatedAt: new Date() }).where(eq(settings.key, key)).run()
   } else {
-    db.insert(settings)
-      .values({ key, value, updatedAt: new Date() })
-      .run()
+    db.insert(settings).values({ key, value, updatedAt: new Date() }).run()
   }
 }
 
@@ -64,6 +59,11 @@ export async function getAllSettings(): Promise<AppSettings> {
         const subKey = setting.key.replace('screenshot.', '') as keyof typeof result.screenshot
         if (subKey in result.screenshot && parsedValue !== null) {
           ;(result.screenshot as any)[subKey] = parsedValue
+        }
+      } else if (setting.key.startsWith('github.')) {
+        const subKey = setting.key.replace('github.', '') as keyof typeof result.github
+        if (result.github && subKey in result.github && parsedValue !== null) {
+          ;(result.github as any)[subKey] = parsedValue
         }
       }
     } catch (e) {
@@ -102,6 +102,14 @@ export async function setSettings(settingsObj: Partial<AppSettings>): Promise<vo
       }
     }
   }
+
+  if (settingsObj.github) {
+    for (const [key, value] of Object.entries(settingsObj.github)) {
+      if (value !== undefined) {
+        await setSetting(`github.${key}`, JSON.stringify(value))
+      }
+    }
+  }
 }
 
 /**
@@ -118,10 +126,15 @@ export async function deleteSetting(key: string): Promise<void> {
 export async function resetSettings(): Promise<void> {
   const db = getDb()
 
-  // Delete all settings that start with general., focus., or screenshot.
+  // Delete all settings that start with general., focus., screenshot., or github.
   const allSettings = db.select().from(settings).all()
   for (const setting of allSettings) {
-    if (setting.key.startsWith('general.') || setting.key.startsWith('focus.') || setting.key.startsWith('screenshot.')) {
+    if (
+      setting.key.startsWith('general.') ||
+      setting.key.startsWith('focus.') ||
+      setting.key.startsWith('screenshot.') ||
+      setting.key.startsWith('github.')
+    ) {
       db.delete(settings).where(eq(settings.key, setting.key)).run()
     }
   }

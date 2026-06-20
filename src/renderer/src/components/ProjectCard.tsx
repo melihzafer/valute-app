@@ -136,10 +136,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         <div className="flex items-baseline gap-1.5 text-foreground">
           <DollarSign className="h-4 w-4 text-muted-foreground" />
           <span className="text-2xl font-bold">
-            {formatCurrency(
-              (project.hourlyRate || project.fixedPrice || 0) / 100,
-              project.currency
-            )}
+            {formatCurrency(project.hourlyRate || project.fixedPrice || 0, project.currency)}
           </span>
           <span className="text-sm text-muted-foreground">
             {project.pricingModel === 'HOURLY'

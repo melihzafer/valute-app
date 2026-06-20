@@ -8,7 +8,15 @@ import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
 import { Dialog } from '../components/ui/Dialog'
 import { LIFE_AREAS, areaColor, areaLabel } from '../lib/lifeAreas'
-import { CheckSquare, Target, Repeat, Plus, Trash2, Flame } from 'lucide-react'
+import {
+  CheckSquare,
+  Target,
+  Repeat,
+  Plus,
+  Trash2,
+  Flame,
+  Calendar as CalendarIcon
+} from 'lucide-react'
 
 type Tab = 'tasks' | 'goals' | 'habits'
 
@@ -169,12 +177,22 @@ const TasksTab: React.FC<{ tasks: TaskIPC[]; refresh: () => Promise<void> }> = (
         </div>
         <div>
           <label className="block text-xs text-muted-foreground mb-1">Due</label>
-          <Input
-            type="date"
-            value={due}
-            onChange={(e) => setDue(e.target.value)}
-            className="w-40"
-          />
+          <div className="relative">
+            <Input
+              type="date"
+              value={due}
+              onChange={(e) => setDue(e.target.value)}
+              onClick={(e) => {
+                try {
+                  e.currentTarget.showPicker()
+                } catch {}
+              }}
+              className="w-40 pr-10 cursor-pointer"
+            />
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-muted-foreground">
+              <CalendarIcon className="h-4 w-4" />
+            </div>
+          </div>
         </div>
         <Button onClick={add} disabled={!title.trim()}>
           <Plus className="h-4 w-4" />

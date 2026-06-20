@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS "projects" (
   "workflow_status" text DEFAULT 'active',
   "assets_path" text,
   "notes" text,
+  "github_url" text,
+  "local_path" text,
+  "run_command" text,
   "created_at" integer
 );
 
@@ -184,6 +187,8 @@ CREATE TABLE IF NOT EXISTS "tasks" (
   "project_id" text,
   "goal_id" text,
   "sort_order" integer DEFAULT 0,
+  "github_issue_number" integer,
+  "github_issue_url" text,
   "created_at" integer,
   "completed_at" integer,
   FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE set null
@@ -254,6 +259,38 @@ CREATE TABLE IF NOT EXISTS "mood_entries" (
   "note" text,
   "gratitude" text,
   "created_at" integer
+);
+
+CREATE TABLE IF NOT EXISTS "health_entries" (
+  "id" text PRIMARY KEY NOT NULL,
+  "date" text NOT NULL,
+  "sleep_hours" real,
+  "water_ml" integer,
+  "workout_duration" integer,
+  "workout_type" text,
+  "weight" real,
+  "steps" integer,
+  "energy_level" integer,
+  "notes" text,
+  "created_at" integer
+);
+
+CREATE TABLE IF NOT EXISTS "events" (
+  "id" text PRIMARY KEY NOT NULL,
+  "title" text NOT NULL,
+  "description" text,
+  "area" text DEFAULT 'general',
+  "start_time" integer NOT NULL,
+  "end_time" integer,
+  "all_day" integer DEFAULT false,
+  "location" text,
+  "color" text DEFAULT '#6366f1',
+  "recurrence" text DEFAULT 'none',
+  "reminder_minutes" integer,
+  "notified_for" text,
+  "project_id" text,
+  "created_at" integer,
+  FOREIGN KEY ("project_id") REFERENCES "projects"("id") ON UPDATE no action ON DELETE set null
 );
 `
 
@@ -361,6 +398,61 @@ export function initializeDatabase(): ReturnType<typeof drizzle> {
         sqlite.exec('ALTER TABLE "projects" ADD COLUMN "category" text DEFAULT \'work\';')
         console.log('category column added to projects successfully')
       }
+
+      // Check if github_url column exists in projects table
+      const projectsHasGithubUrl = projectsInfo.some((col) => col.name === 'github_url')
+
+      if (!projectsHasGithubUrl) {
+        console.log('Adding github_url column to projects table...')
+        sqlite.exec('ALTER TABLE "projects" ADD COLUMN "github_url" text;')
+        console.log('github_url column added to projects successfully')
+      }
+
+      // Check if local_path column exists in projects table
+      const projectsHasLocalPath = projectsInfo.some((col) => col.name === 'local_path')
+
+      if (!projectsHasLocalPath) {
+        console.log('Adding local_path column to projects table...')
+        sqlite.exec('ALTER TABLE "projects" ADD COLUMN "local_path" text;')
+        console.log('local_path column added to projects successfully')
+      }
+
+      // Check if run_command column exists in projects table
+      const projectsHasRunCommand = projectsInfo.some((col) => col.name === 'run_command')
+
+      if (!projectsHasRunCommand) {
+        console.log('Adding run_command column to projects table...')
+        sqlite.exec('ALTER TABLE "projects" ADD COLUMN "run_command" text;')
+        console.log('run_command column added to projects successfully')
+      }
+
+      // Check if github_issue_number column exists in tasks table
+      const tasksInfo = sqlite.prepare('PRAGMA table_info(tasks)').all() as { name: string }[]
+      const tasksHasIssueNumber = tasksInfo.some((col) => col.name === 'github_issue_number')
+
+      if (!tasksHasIssueNumber) {
+        console.log('Adding github_issue_number column to tasks table...')
+        sqlite.exec('ALTER TABLE "tasks" ADD COLUMN "github_issue_number" integer;')
+        sqlite.exec('ALTER TABLE "tasks" ADD COLUMN "github_issue_url" text;')
+        console.log('GitHub issue columns added to tasks successfully')
+      }
+
+      // Run health_entries table migration
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS "health_entries" (
+          "id" text PRIMARY KEY NOT NULL,
+          "date" text NOT NULL,
+          "sleep_hours" real,
+          "water_ml" integer,
+          "workout_duration" integer,
+          "workout_type" text,
+          "weight" real,
+          "steps" integer,
+          "energy_level" integer,
+          "notes" text,
+          "created_at" integer
+        );
+      `)
     } catch (migrationError) {
       // Column might already exist, that's fine
       console.log('Migration check completed:', migrationError)
@@ -387,6 +479,17 @@ export function getDb() {
     return initializeDatabase()
   }
   return db
+}
+
+/**
+ * Get the raw better-sqlite3 connection (for full backup/restore).
+ * Initializes the database if needed.
+ */
+export function getRawDb(): Database.Database {
+  if (!sqlite) {
+    initializeDatabase()
+  }
+  return sqlite as Database.Database
 }
 
 /**

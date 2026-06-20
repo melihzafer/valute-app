@@ -1,17 +1,16 @@
 // src/renderer/src/components/TimerWidget.tsx
 
 import React, { useState, useEffect } from 'react'
-import { Play, Pause, Square, Timer, ExternalLink, X } from 'lucide-react'
+import { Play, Pause, Square } from 'lucide-react'
 import type { TimerState } from '../../../shared/types'
-import { calculateEarnings, formatCurrency } from '../lib/utils'
+import { calculateLiveEarnings } from '../../../shared/earnings'
 import { useProjectStore } from '../store/useProjectStore'
 import { UnitCounter } from './UnitCounter'
 import { Button } from './ui/Button'
+import { formatCurrency } from '../lib/utils'
 
 interface TimerWidgetProps {
   timerState: TimerState
-  hourlyRate?: number
-  currency?: string
   onPause?: () => void
   onResume?: () => void
   onStop?: () => void
@@ -29,48 +28,9 @@ const formatTime = (seconds: number): string => {
   return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`
 }
 
-const TimerWidget: React.FC<TimerWidgetProps> = ({
-  timerState,
-  hourlyRate = 0,
-  currency = 'USD',
-  onPause,
-  onResume,
-  onStop
-}) => {
+const TimerWidget: React.FC<TimerWidgetProps> = ({ timerState, onPause, onResume, onStop }) => {
   const { projects } = useProjectStore()
-  const [isFloating, setIsFloating] = useState(false)
-
-  // Find the active project to check its pricing model
-  const activeProject = projects.find((p) => p.id === timerState.projectId)
-
-  const currentEarnings = calculateEarnings(timerState.elapsedSeconds, hourlyRate)
-
-  // Check if floating timer is open on mount
-  useEffect(() => {
-    window.api.isFloatingTimerOpen().then((response) => {
-      if (response.success && response.data) {
-        setIsFloating(true)
-      }
-    })
-
-    // Listen for floating timer closed event
-    const cleanup = window.api.onFloatingTimerClosed(() => {
-      setIsFloating(false)
-    })
-
-    return cleanup
-  }, [])
-
-  // Sync timer state to floating window when it changes
-  useEffect(() => {
-    if (isFloating) {
-      window.api.syncTimerToFloating({
-        ...timerState,
-        hourlyRate,
-        currency
-      } as TimerState)
-    }
-  }, [timerState, hourlyRate, currency, isFloating])
+  const [todaySeconds, setTodaySeconds] = useState(0)
 
   // Listen for actions from floating window
   useEffect(() => {
@@ -87,37 +47,41 @@ const TimerWidget: React.FC<TimerWidgetProps> = ({
           break
       }
     })
-
     return cleanup
   }, [onPause, onResume, onStop])
 
-  const handlePopOut = async () => {
-    await window.api.openFloatingTimer()
-    setIsFloating(true)
-    // Floating window will request initial state via get-timer-state on mount
-    // But we still sync for immediate updates
-    window.api.syncTimerToFloating({
-      ...timerState,
-      hourlyRate,
-      currency
-    } as TimerState)
-  }
-
-  const handlePopIn = async () => {
-    await window.api.closeFloatingTimer()
-    setIsFloating(false)
-  }
+  // Bugunun toplam takip suresi (kayitli loglardan); dakikada bir tazelenir
+  useEffect(() => {
+    let cancelled = false
+    const load = async (): Promise<void> => {
+      try {
+        const now = new Date()
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        const res = await window.api.getTimeReport(start.toISOString(), now.toISOString())
+        if (!cancelled && res.success && res.data) setTodaySeconds(res.data.totalSeconds)
+      } catch {
+        /* sessiz: widget kritik degil */
+      }
+    }
+    load()
+    const i = setInterval(load, 60_000)
+    return () => {
+      cancelled = true
+      clearInterval(i)
+    }
+  }, [timerState.isRunning])
 
   if (!timerState.projectId && !timerState.isRunning) {
-    return null // Don't show widget if no timer is active
+    return null
   }
 
-  // If the active project is UNIT_BASED, render the UnitCounter instead
+  const activeProject = projects.find((p) => p.id === timerState.projectId)
+
   if (activeProject?.pricingModel === 'UNIT_BASED') {
     return (
       <UnitCounter
         projectId={activeProject.id}
-        rate={activeProject.hourlyRate} // This is price per unit for UNIT_BASED
+        rate={activeProject.hourlyRate}
         unitName={activeProject.unitName || 'Unit'}
         currency={activeProject.currency}
         onClose={onStop}
@@ -125,78 +89,53 @@ const TimerWidget: React.FC<TimerWidgetProps> = ({
     )
   }
 
-  // Otherwise, render the traditional timer for HOURLY projects
+  // Q5 — canlı kazanç göstergesi. Sadece HOURLY projeler için (FIXED/SUBSCRIPTION
+  // saniye başına birikmez). hourlyRate cent cinsinden. calculateLiveEarnings pure.
+  const showLiveEarnings =
+    timerState.isRunning &&
+    activeProject?.pricingModel === 'HOURLY' &&
+    activeProject.hourlyRate > 0
+  const liveEarningsCents = showLiveEarnings
+    ? calculateLiveEarnings(timerState.elapsedSeconds, activeProject.hourlyRate)
+    : 0
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-80">
-      <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl p-5 space-y-4">
-        {/* Status Indicator */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Timer
-              className={`h-5 w-5 ${timerState.isRunning ? 'text-primary animate-pulse' : 'text-muted-foreground'}`}
-            />
-            <span className="text-sm font-medium text-foreground">
-              {timerState.isRunning ? 'Running' : 'Paused'}
+    <div className="fixed bottom-4 right-4 z-50">
+      <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-full shadow-2xl pl-3 pr-2 py-1.5 flex items-center gap-2">
+        <div className="flex flex-col leading-none">
+          <span className="text-xs font-mono font-bold tabular-nums">
+            {formatTime(timerState.elapsedSeconds)}
+          </span>
+          <span className="text-[9px] text-muted-foreground tabular-nums">
+            {formatTime(todaySeconds)}
+          </span>
+        </div>
+        {showLiveEarnings && (
+          <div className="flex flex-col leading-none border-l border-border/50 pl-2">
+            <span className="text-[9px] text-muted-foreground">earned</span>
+            <span className="text-xs font-mono font-bold tabular-nums text-emerald-500 dark:text-emerald-400">
+              {formatCurrency(liveEarningsCents, activeProject.currency)}
             </span>
           </div>
-          <div className="flex items-center gap-1">
-            {timerState.currentProjectName && (
-              <span className="text-xs text-muted-foreground max-w-24 truncate">
-                {timerState.currentProjectName}
-              </span>
-            )}
-            {/* Pop-out / Pop-in button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={isFloating ? handlePopIn : handlePopOut}
-              className="h-6 w-6 p-0"
-              title={isFloating ? 'Close floating timer' : 'Pop out timer'}
-            >
-              {isFloating ? (
-                <X className="h-3.5 w-3.5 text-muted-foreground" />
-              ) : (
-                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* Timer Display */}
-        <div className="text-center">
-          <div className="text-3xl font-mono font-bold text-foreground tabular-nums">
-            {formatTime(timerState.elapsedSeconds)}
-          </div>
-          {hourlyRate > 0 && (
-            <div className="text-lg font-semibold text-primary mt-2">
-              {formatCurrency(currentEarnings, currency)}
-            </div>
-          )}
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center justify-center space-x-2">
-          {timerState.isRunning ? (
-            <Button variant="ghost" size="sm" onClick={onPause} className="hover:bg-accent">
-              <Pause className="h-4 w-4 mr-2" />
-              Pause
-            </Button>
-          ) : (
-            <Button variant="ghost" size="sm" onClick={onResume} className="hover:bg-accent">
-              <Play className="h-4 w-4 mr-2" />
-              Resume
-            </Button>
-          )}
+        )}
+        {timerState.isRunning ? (
+          <Button variant="ghost" size="sm" onClick={onPause} className="h-6 w-6 p-0" title="Pause">
+            <Pause className="h-3 w-3" />
+          </Button>
+        ) : (
           <Button
             variant="ghost"
             size="sm"
-            onClick={onStop}
-            className="text-destructive hover:bg-destructive/10"
+            onClick={onResume}
+            className="h-6 w-6 p-0"
+            title="Resume"
           >
-            <Square className="h-4 w-4 mr-2" />
-            Stop
+            <Play className="h-3 w-3" />
           </Button>
-        </div>
+        )}
+        <Button variant="ghost" size="sm" onClick={onStop} className="h-6 w-6 p-0 text-destructive hover:text-destructive" title="Stop">
+          <Square className="h-3 w-3" />
+        </Button>
       </div>
     </div>
   )

@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { eq, desc } from 'drizzle-orm'
 import { getDb } from '../db/index'
 import { courses, assignments } from '../db/schema'
+import { weightedGrade, creditWeightedAverage } from '../../shared/grades'
 import type { CourseIPC, AssignmentIPC, AssignmentStatus } from '../../shared/types'
 
 const iso = (d: Date | null) => (d instanceof Date ? d.toISOString() : d ? String(d) : null)
@@ -28,11 +29,7 @@ function assignmentToIPC(row: AssignmentRow): AssignmentIPC {
 
 /** Weighted grade-so-far for a course, using graded assignments only. */
 function currentGrade(rows: AssignmentRow[]): number | null {
-  const graded = rows.filter((a) => a.grade != null && a.weight != null)
-  const totalWeight = graded.reduce((s, a) => s + (a.weight || 0), 0)
-  if (totalWeight === 0) return null
-  const earned = graded.reduce((s, a) => s + (a.grade || 0) * (a.weight || 0), 0)
-  return Math.round((earned / totalWeight) * 10) / 10
+  return weightedGrade(rows.map((a) => ({ grade: a.grade, weight: a.weight })))
 }
 
 function courseToIPC(row: CourseRow): CourseIPC {
@@ -194,9 +191,7 @@ export async function deleteAssignment(id: string): Promise<void> {
 /** GPA-ish snapshot: credit-weighted average of course current grades (0-100 scale). */
 export async function getGpa(): Promise<{ gradeAvg: number | null; totalCredits: number }> {
   const all = await getCourses()
-  const graded = all.filter((c) => c.currentGrade != null && c.credits != null)
-  const totalCredits = graded.reduce((s, c) => s + (c.credits || 0), 0)
-  if (totalCredits === 0) return { gradeAvg: null, totalCredits: 0 }
-  const sum = graded.reduce((s, c) => s + (c.currentGrade as number) * (c.credits || 0), 0)
-  return { gradeAvg: Math.round((sum / totalCredits) * 10) / 10, totalCredits }
+  return creditWeightedAverage(
+    all.map((c) => ({ currentGrade: c.currentGrade, credits: c.credits }))
+  )
 }

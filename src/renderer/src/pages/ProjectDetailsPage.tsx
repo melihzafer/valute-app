@@ -31,11 +31,13 @@ import {
   Check,
   Loader2,
   Camera,
-  ClipboardList
+  ClipboardList,
+  Terminal
 } from 'lucide-react'
 
 type TabId =
   | 'overview'
+  | 'todos'
   | 'logs'
   | 'daily'
   | 'expenses'
@@ -47,6 +49,7 @@ type TabId =
 
 const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'todos', label: 'Todos', icon: ClipboardList },
   { id: 'logs', label: 'Work Logs', icon: Clock },
   { id: 'daily', label: 'Daily Report', icon: ClipboardList },
   { id: 'expenses', label: 'Expenses', icon: Receipt },
@@ -56,6 +59,9 @@ const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: 'screenshots', label: 'Screenshots', icon: Camera },
   { id: 'settings', label: 'Settings', icon: Settings }
 ]
+
+import ProjectTodos from '../components/ProjectTodos'
+import ProjectStats from '../components/ProjectStats'
 
 const ProjectDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -175,6 +181,27 @@ const ProjectDetailsPage: React.FC = () => {
     }
   }
 
+  const handleOpenFolder = async () => {
+    if (!project?.localPath) return
+    const res = await window.api.projectOpenFolder(project.localPath)
+    if (!res.success) {
+      alert(res.error || 'Failed to open local directory')
+    }
+  }
+
+  const handleRunCommand = async () => {
+    const cmd = project?.runCommand
+    if (!cmd) return
+    if (window.confirm(`Run project command: "${cmd}"?`)) {
+      const res = await window.api.projectRunCommand(cmd, project?.localPath || undefined)
+      if (res.success) {
+        alert(`Command output:\n${res.data}`)
+      } else {
+        alert(`Command failed:\n${res.error}`)
+      }
+    }
+  }
+
   // Metrics calculations
   const totalTimeSeconds = logs.reduce((acc, log) => acc + log.accumulatedTime, 0)
   const totalExpensesCents = expenses.reduce((acc, exp) => acc + exp.amount, 0)
@@ -191,27 +218,26 @@ const ProjectDetailsPage: React.FC = () => {
     switch (project.pricingModel) {
       case 'HOURLY': {
         const hours = totalTimeSeconds / 3600
-        return (project.hourlyRate / 100) * hours
+        return (project.hourlyRate || 0) * hours
       }
       case 'UNIT_BASED': {
         const totalUnits = logs.reduce((acc, log) => acc + (log.quantity || 0), 0)
-        return (project.hourlyRate / 100) * totalUnits
+        return (project.hourlyRate || 0) * totalUnits
       }
       case 'FIXED':
-        return (project.fixedPrice || 0) / 100
+        return project.fixedPrice || 0
       case 'SUBSCRIPTION':
-        return project.hourlyRate / 100
+        return project.hourlyRate || 0
       default:
         return 0
     }
   }
 
   const calculateEffectiveHourlyRate = (): number => {
-    if (!project || totalTimeSeconds === 0)
-      return project?.hourlyRate ? project.hourlyRate / 100 : 0
+    if (!project || totalTimeSeconds === 0) return project?.hourlyRate || 0
 
     if (project.pricingModel === 'HOURLY') {
-      return project.hourlyRate / 100
+      return project.hourlyRate || 0
     }
 
     const earnings = calculateTotalEarnings()
@@ -236,9 +262,9 @@ const ProjectDetailsPage: React.FC = () => {
     switch (project.pricingModel) {
       case 'FIXED': {
         const hours = totalTimeSeconds / 3600
-        const impliedRate = project.hourlyRate / 100 || 50 // Default $50/hr if not set
+        const impliedRate = project.hourlyRate || 5000 // Default 5000 cents ($50/hr) if not set
         const currentSpend = hours * impliedRate
-        const budget = (project.fixedPrice || 0) / 100
+        const budget = project.fixedPrice || 0
         const percentage = budget > 0 ? (currentSpend / budget) * 100 : 0
 
         return {
@@ -399,6 +425,31 @@ const ProjectDetailsPage: React.FC = () => {
             </div>
             {project.clientName && <p className="text-muted-foreground">{project.clientName}</p>}
           </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {project.localPath && (
+              <Button
+                onClick={handleOpenFolder}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1.5"
+              >
+                <FolderOpen className="h-4 w-4" />
+                Open Folder
+              </Button>
+            )}
+            {project.runCommand && (
+              <Button
+                onClick={handleRunCommand}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1.5"
+              >
+                <Terminal className="h-4 w-4 text-green-500" />
+                Run Command
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Progress Bar */}
@@ -483,7 +534,7 @@ const ProjectDetailsPage: React.FC = () => {
                   Net:{' '}
                   <span className="text-green-400 font-medium">
                     {formatCurrency(
-                      calculateTotalEarnings() - totalExpensesCents / 100,
+                      calculateTotalEarnings() - totalExpensesCents,
                       project.currency
                     )}
                   </span>
@@ -506,7 +557,7 @@ const ProjectDetailsPage: React.FC = () => {
               <div className="bg-card border border-border/50 rounded-lg p-6">
                 <p className="text-sm text-muted-foreground mb-1">Total Expenses</p>
                 <p className="text-3xl font-bold text-destructive">
-                  -{formatCurrency(totalExpensesCents / 100, project.currency)}
+                  -{formatCurrency(totalExpensesCents, project.currency)}
                 </p>
               </div>
             )}
@@ -520,8 +571,16 @@ const ProjectDetailsPage: React.FC = () => {
                 <p className="text-3xl font-bold text-foreground">{totalUnits}</p>
               </div>
             )}
+
+            {/* Periodic stats (today / week / month / all-time) */}
+            <div className="md:col-span-3">
+              <ProjectStats projectId={project.id} currency={project.currency} />
+            </div>
           </div>
         )}
+
+        {/* Todos Tab */}
+        {activeTab === 'todos' && <ProjectTodos projectId={project.id} />}
 
         {/* Work Logs Tab */}
         {activeTab === 'logs' && (
@@ -606,6 +665,7 @@ const ProjectDetailsPage: React.FC = () => {
                 projectToEdit={project}
                 onSubmit={handleProjectUpdate}
                 onClose={() => {}}
+                showArchiveField={false}
               />
             </div>
 
@@ -647,6 +707,7 @@ const ProjectDetailsPage: React.FC = () => {
         onOpenChange={(open) => {
           if (!open) setEditingLog(null)
         }}
+        size="wide"
       >
         {editingLog && (
           <LogEntryForm

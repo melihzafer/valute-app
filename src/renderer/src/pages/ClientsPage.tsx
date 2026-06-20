@@ -7,6 +7,7 @@ import { useClientStore } from '../store/useClientStore'
 import { Button } from '../components/ui/Button'
 import { AddClientDialog } from '../components/clients/AddClientDialog'
 import { RecordPaymentDialog } from '../components/clients/RecordPaymentDialog'
+import { EmptyState } from '../components/ui/EmptyState'
 import type { ClientWithBalance } from '../../../shared/types'
 
 const ClientsPage: React.FC = () => {
@@ -48,10 +49,12 @@ const ClientsPage: React.FC = () => {
             Manage your clients and track their financial standing
           </p>
         </div>
-        <Button onClick={() => setIsAddDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Client
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Client
+          </Button>
+        </div>
       </div>
 
       {/* Client List */}
@@ -60,17 +63,13 @@ const ClientsPage: React.FC = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : clients.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 text-center">
-          <Users className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium">No clients yet</h3>
-          <p className="text-muted-foreground text-sm mt-1 mb-4">
-            Add your first client to start tracking their projects and payments
-          </p>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Client
-          </Button>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="No clients yet"
+          description="Add your first client to start tracking their projects, invoices, and payments."
+          actionLabel="Add Client"
+          onActionClick={() => setIsAddDialogOpen(true)}
+        />
       ) : (
         <div className="grid gap-4">
           {clients.map((client) => (
@@ -93,7 +92,9 @@ const ClientsPage: React.FC = () => {
                           {client.company}
                         </span>
                       )}
-                      <span>{client.projectCount} project{client.projectCount !== 1 ? 's' : ''}</span>
+                      <span>
+                        {client.projectCount} project{client.projectCount !== 1 ? 's' : ''}
+                      </span>
                     </div>
                   </div>
                 </div>

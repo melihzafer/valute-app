@@ -83,20 +83,13 @@ export const FocusGuardNudge: React.FC = () => {
 
         {/* Actions */}
         <div className="flex flex-col gap-2 p-6 pt-0">
-          <Button
-            onClick={handleContinue}
-            className="w-full justify-center gap-2"
-          >
+          <Button onClick={handleContinue} className="w-full justify-center gap-2">
             <Play className="h-4 w-4" />
             Yes, Continue Working
           </Button>
 
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleStop}
-              className="flex-1 justify-center gap-2"
-            >
+            <Button variant="outline" onClick={handleStop} className="flex-1 justify-center gap-2">
               <Square className="h-4 w-4" />
               Stop Timer
             </Button>

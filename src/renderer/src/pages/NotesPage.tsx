@@ -9,6 +9,7 @@ import { Textarea } from '../components/ui/Textarea'
 import { Select } from '../components/ui/Select'
 import { LIFE_AREAS, areaColor } from '../lib/lifeAreas'
 import { FileText, Plus, Trash2, Pin, Search } from 'lucide-react'
+import { EmptyState } from '../components/ui/EmptyState'
 
 const NotesPage: React.FC = () => {
   const [notes, setNotes] = useState<NoteIPC[]>([])
@@ -195,12 +196,14 @@ const NotesPage: React.FC = () => {
             />
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <FileText className="h-10 w-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground mb-4">Select a note or create a new one.</p>
-            <Button onClick={create}>
-              <Plus className="mr-2 h-4 w-4" /> New Note
-            </Button>
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <EmptyState
+              icon={FileText}
+              title="No note selected"
+              description="Select a note from the left panel to edit it, or create a brand new one to capture your thoughts."
+              actionLabel="New Note"
+              onActionClick={create}
+            />
           </div>
         )}
       </div>

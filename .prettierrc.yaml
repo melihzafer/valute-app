@@ -2,3 +2,6 @@ singleQuote: true
 semi: false
 printWidth: 100
 trailingComma: none
+# Windows checkout CRLF dosyalarında prettier'in "Delete ␍" uyarılarını bastır.
+# Kalıcı LF normalizasyonu ayrı bir geçişte yapılmalı (.gitattributes + prettier --write).
+endOfLine: 'auto'

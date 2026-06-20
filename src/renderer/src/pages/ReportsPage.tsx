@@ -260,9 +260,14 @@ const ReportsPage: React.FC = () => {
                 id="startDate"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="pr-10"
+                onClick={(e) => {
+                  try {
+                    e.currentTarget.showPicker()
+                  } catch {}
+                }}
+                className="pr-10 cursor-pointer"
               />
-              <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
             </div>
           </div>
           <div>
@@ -276,9 +281,14 @@ const ReportsPage: React.FC = () => {
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={startDate} // End date should be after start date
-                className="pr-10"
+                onClick={(e) => {
+                  try {
+                    e.currentTarget.showPicker()
+                  } catch {}
+                }}
+                className="pr-10 cursor-pointer"
               />
-              <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
             </div>
           </div>
         </div>

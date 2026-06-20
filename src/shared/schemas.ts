@@ -19,6 +19,8 @@ export const ProjectSchemaBase = z.object({
   unitName: z.string().min(1).optional(),
   status: z.enum(['active', 'archived']),
   workflowStatus: z.enum(['active', 'on_hold', 'done']).optional(),
+  githubUrl: z.string().url().optional().or(z.literal('')),
+  localPath: z.string().min(1).optional().or(z.literal('')),
   createdAt: z.preprocess((arg) => new Date(arg as string), z.date())
 })
 

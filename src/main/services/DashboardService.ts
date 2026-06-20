@@ -2,8 +2,9 @@
 // Dashboard aggregation service - performs heavy calculations in main process
 
 import { getDb } from '../db/index'
-import { projects, logs, expenses, settings } from '../db/schema'
+import { projects, logs, expenses, settings, payments, clients } from '../db/schema'
 import { eq, gte, isNull, desc } from 'drizzle-orm'
+import { calculateLogEarnings } from '../../shared/earnings'
 
 export interface DashboardStats {
   currentMonthEarnings: number // cents
@@ -27,28 +28,7 @@ export interface RecentActivityItem {
   earnings: number // cents
   date: string // ISO string
   notes: string | null
-}
-
-/**
- * Calculate earnings for a log entry based on project type
- */
-function calculateLogEarnings(
-  duration: number | null,
-  quantity: number | null,
-  hourlyRate: number | null,
-  projectType: string
-): number {
-  if (!hourlyRate) return 0
-
-  if (projectType === 'UNIT_BASED' && quantity) {
-    // For unit-based: quantity * price per unit
-    return Math.round(quantity * hourlyRate)
-  } else if (duration) {
-    // For hourly: (duration in seconds / 3600) * hourly rate
-    return Math.round((duration / 3600) * hourlyRate)
-  }
-
-  return 0
+  type?: 'log' | 'payment'
 }
 
 /**
@@ -59,40 +39,16 @@ export function getStats(): DashboardStats {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  // Get all logs this month with project info
-  const logsThisMonth = db
-    .select({
-      duration: logs.duration,
-      quantity: logs.quantity,
-      hourlyRate: projects.hourlyRate,
-      projectType: projects.type,
-      invoiceId: logs.invoiceId
-    })
-    .from(logs)
-    .innerJoin(projects, eq(logs.projectId, projects.id))
-    .where(gte(logs.startTime, startOfMonth))
+  // Calculate current month earnings based on payments received this month
+  const paymentsThisMonth = db
+    .select({ amount: payments.amount })
+    .from(payments)
+    .where(gte(payments.date, startOfMonth))
     .all()
 
-  // Calculate current month earnings
-  let currentMonthEarnings = 0
-  let unbilledAmount = 0
+  const currentMonthEarnings = paymentsThisMonth.reduce((sum, p) => sum + (p.amount || 0), 0)
 
-  for (const log of logsThisMonth) {
-    const earnings = calculateLogEarnings(
-      log.duration,
-      log.quantity,
-      log.hourlyRate,
-      log.projectType
-    )
-    currentMonthEarnings += earnings
-
-    // If not invoiced, add to unbilled
-    if (!log.invoiceId) {
-      unbilledAmount += earnings
-    }
-  }
-
-  // Also get unbilled logs from previous months
+  // Calculate total unbilled from all time based on logs
   const allUnbilledLogs = db
     .select({
       duration: logs.duration,
@@ -105,8 +61,7 @@ export function getStats(): DashboardStats {
     .where(isNull(logs.invoiceId))
     .all()
 
-  // Recalculate total unbilled from all time
-  unbilledAmount = 0
+  let unbilledAmount = 0
   for (const log of allUnbilledLogs) {
     unbilledAmount += calculateLogEarnings(
       log.duration,
@@ -160,47 +115,35 @@ export function getRevenueChartData(days: number): ChartDataPoint[] {
   startDate.setDate(startDate.getDate() - days)
   startDate.setHours(0, 0, 0, 0)
 
-  // Get all logs in the date range with project info
-  const logsInRange = db
+  // Get all payments in the date range
+  const paymentsInRange = db
     .select({
-      startTime: logs.startTime,
-      duration: logs.duration,
-      quantity: logs.quantity,
-      hourlyRate: projects.hourlyRate,
-      projectType: projects.type
+      amount: payments.amount,
+      date: payments.date
     })
-    .from(logs)
-    .innerJoin(projects, eq(logs.projectId, projects.id))
-    .where(gte(logs.startTime, startDate))
+    .from(payments)
+    .where(gte(payments.date, startDate))
     .all()
 
-  // Group by date and sum earnings
   const dailyEarnings: Record<string, number> = {}
 
   // Initialize all days with 0
-  for (let i = 0; i < days; i++) {
+  for (let i = 0; i <= days; i++) {
     const date = new Date(startDate)
     date.setDate(date.getDate() + i)
     const dateStr = date.toISOString().split('T')[0]
     dailyEarnings[dateStr] = 0
   }
 
-  // Add earnings for each log
-  for (const log of logsInRange) {
-    if (!log.startTime) continue
+  // Add earnings for each payment
+  for (const p of paymentsInRange) {
+    if (!p.date) continue
 
-    const logDate = new Date(log.startTime)
-    const dateStr = logDate.toISOString().split('T')[0]
-
-    const earnings = calculateLogEarnings(
-      log.duration,
-      log.quantity,
-      log.hourlyRate,
-      log.projectType
-    )
+    const pDate = new Date(p.date)
+    const dateStr = pDate.toISOString().split('T')[0]
 
     if (dailyEarnings[dateStr] !== undefined) {
-      dailyEarnings[dateStr] += earnings
+      dailyEarnings[dateStr] += p.amount
     }
   }
 
@@ -211,7 +154,7 @@ export function getRevenueChartData(days: number): ChartDataPoint[] {
 }
 
 /**
- * Get recent activity (last N logs with project info)
+ * Get recent activity (last N logs and payments with project/client info)
  */
 export function getRecentActivity(limit: number): RecentActivityItem[] {
   const db = getDb()
@@ -234,15 +177,46 @@ export function getRecentActivity(limit: number): RecentActivityItem[] {
     .limit(limit)
     .all()
 
-  return recentLogs.map((log) => ({
+  const recentPayments = db
+    .select({
+      id: payments.id,
+      clientId: payments.clientId,
+      clientName: clients.name,
+      amount: payments.amount,
+      date: payments.date,
+      notes: payments.notes
+    })
+    .from(payments)
+    .innerJoin(clients, eq(payments.clientId, clients.id))
+    .orderBy(desc(payments.date))
+    .limit(limit)
+    .all()
+
+  const logItems: RecentActivityItem[] = recentLogs.map((log) => ({
     id: log.id,
     projectId: log.projectId,
     projectName: log.projectName,
     duration: log.duration || 0,
     earnings: calculateLogEarnings(log.duration, log.quantity, log.hourlyRate, log.projectType),
     date: log.startTime ? new Date(log.startTime).toISOString() : new Date().toISOString(),
-    notes: log.notes
+    notes: log.notes,
+    type: 'log'
   }))
+
+  const paymentItems: RecentActivityItem[] = recentPayments.map((pmt) => ({
+    id: pmt.id,
+    projectId: pmt.clientId, // Store clientId as projectId so UI knows where to navigate
+    projectName: `Payment from ${pmt.clientName}`,
+    duration: 0,
+    earnings: pmt.amount,
+    date: pmt.date ? new Date(pmt.date).toISOString() : new Date().toISOString(),
+    notes: pmt.notes,
+    type: 'payment'
+  }))
+
+  return [...logItems, ...paymentItems]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, limit)
 }
 
 /**

@@ -126,55 +126,60 @@ const LogEntryForm: React.FC<LogEntryFormProps> = ({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-5 p-6 bg-card border border-border/50 rounded-xl shadow-lg"
-    >
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-foreground">
-          {initialData ? 'Edit Log Entry' : 'Log Time Entry'}
-        </h2>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ✕
-          </button>
-        )}
-      </div>
-
+    <form onSubmit={handleSubmit} className="space-y-6 p-2 bg-transparent">
+      {/* Error Message */}
       {error && (
-        <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 animate-in fade-in">
           <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="projectSelect" className="block text-sm font-medium text-foreground mb-2">
-            Project
-          </label>
-          <Select
-            id="projectSelect"
-            value={selectedProjectId}
-            onChange={handleProjectChange}
-            required
-            disabled={!!initialData}
-            className="w-full bg-background border-border text-foreground"
-          >
-            <option value="" disabled>
-              Select a project
-            </option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
+      {/* Two-column layout for wide modals */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {/* Left Column: Project and Description */}
+        <div className="space-y-4">
+          <div>
+            <label
+              htmlFor="projectSelect"
+              className="block text-sm font-medium text-foreground mb-2"
+            >
+              Project
+            </label>
+            <Select
+              id="projectSelect"
+              value={selectedProjectId}
+              onChange={handleProjectChange}
+              required
+              disabled={!!initialData}
+              className="w-full bg-background border-border text-foreground"
+            >
+              <option value="" disabled>
+                Select a project
               </option>
-            ))}
-          </Select>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
+              Description
+            </label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional: Task details..."
+              rows={5}
+              className="w-full bg-background border-border text-foreground placeholder:text-muted-foreground resize-none"
+            />
+          </div>
         </div>
 
+        {/* Right Column: Time Selection and Earnings Summary */}
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -184,11 +189,9 @@ const LogEntryForm: React.FC<LogEntryFormProps> = ({
                 onChange={(date) => {
                   if (date) {
                     const newStart = new Date(date)
-                    // Preserve existing time
                     newStart.setHours(startTime.getHours())
                     newStart.setMinutes(startTime.getMinutes())
                     setStartTime(newStart)
-                    // Recalculate duration if endTime is set
                     if (endTime && endTime > newStart) {
                       const newAccumulatedTime = Math.floor(
                         (endTime.getTime() - newStart.getTime()) / 1000
@@ -206,7 +209,6 @@ const LogEntryForm: React.FC<LogEntryFormProps> = ({
                 value={startTime}
                 onChange={(newTime) => {
                   setStartTime(newTime)
-                  // Recalculate duration if endTime is set
                   if (endTime && newTime < endTime) {
                     const duration = Math.floor((endTime.getTime() - newTime.getTime()) / 1000)
                     setAccumulatedTime(duration)
@@ -227,18 +229,15 @@ const LogEntryForm: React.FC<LogEntryFormProps> = ({
                 onChange={(date) => {
                   if (date) {
                     const newEnd = new Date(date)
-                    // Preserve existing time if endTime was already set
                     if (endTime) {
                       newEnd.setHours(endTime.getHours())
                       newEnd.setMinutes(endTime.getMinutes())
                     } else {
-                      // Default to current time if setting end date for first time
                       const now = new Date()
                       newEnd.setHours(now.getHours())
                       newEnd.setMinutes(now.getMinutes())
                     }
                     setEndTime(newEnd)
-                    // Recalculate duration
                     if (newEnd > startTime) {
                       const duration = Math.floor((newEnd.getTime() - startTime.getTime()) / 1000)
                       setAccumulatedTime(duration)
@@ -270,38 +269,24 @@ const LogEntryForm: React.FC<LogEntryFormProps> = ({
               />
             </div>
           </div>
-        </div>
 
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-foreground mb-2">
-            Description
-          </label>
-          <Textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional: Task details..."
-            rows={3}
-            className="w-full bg-background border-border text-foreground placeholder:text-muted-foreground resize-none"
-          />
-        </div>
-
-        <div className="flex items-center justify-between pt-2 border-t border-border/50">
-          <div className="text-sm text-muted-foreground">
-            Duration:{' '}
-            <span className="font-medium text-foreground">
-              {Math.floor(accumulatedTime / 60)}m {accumulatedTime % 60}s
-            </span>
-          </div>
-          {projectForForm && (
-            <div className="text-sm">
-              Earnings:{' '}
-              <span className="font-medium text-primary">
-                {calculateEarnings(accumulatedTime, projectForForm.hourlyRate).toFixed(2)}{' '}
-                {projectForForm.currency}
+          <div className="flex flex-col gap-2 p-3 bg-muted/30 rounded-lg border border-border/50">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Duration:</span>
+              <span className="font-semibold text-foreground text-sm">
+                {Math.floor(accumulatedTime / 60)}m {accumulatedTime % 60}s
               </span>
             </div>
-          )}
+            {projectForForm && (
+              <div className="flex items-center justify-between border-t border-border/30 pt-2">
+                <span className="text-sm text-muted-foreground">Earnings:</span>
+                <span className="font-semibold text-primary text-sm">
+                  {calculateEarnings(accumulatedTime, projectForForm.hourlyRate).toFixed(2)}{' '}
+                  {projectForForm.currency}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

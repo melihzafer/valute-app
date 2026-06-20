@@ -42,6 +42,9 @@ export async function createProject(
     workflowStatus: (projectData as any).workflowStatus || 'active',
     category: (projectData as any).category || 'work', // M6: work | hobby | personal
     assetsPath: null, // Optional field
+    githubUrl: (projectData as any).githubUrl || null,
+    localPath: (projectData as any).localPath || null,
+    runCommand: (projectData as any).runCommand || null,
     createdAt: new Date()
   }
 
@@ -76,7 +79,10 @@ export async function updateProject(
     unitName: projectData.unitName,
     workflowStatus: (projectData as any).workflowStatus, // Lifecycle status
     category: (projectData as any).category, // M6 life-area category
-    notes: projectData.notes // Include notes field for The Canvas
+    notes: projectData.notes, // Include notes field for The Canvas
+    githubUrl: (projectData as any).githubUrl,
+    localPath: (projectData as any).localPath,
+    runCommand: (projectData as any).runCommand
   }
 
   // Remove undefined values

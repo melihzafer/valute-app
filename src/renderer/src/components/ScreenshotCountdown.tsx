@@ -64,19 +64,10 @@ export const ScreenshotCountdown: React.FC = () => {
           <Camera className="h-5 w-5 text-primary" />
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-medium text-foreground">
-            Screenshot in {countdown}s...
-          </span>
-          <span className="text-xs text-muted-foreground">
-            Click Skip to cancel
-          </span>
+          <span className="text-sm font-medium text-foreground">Screenshot in {countdown}s...</span>
+          <span className="text-xs text-muted-foreground">Click Skip to cancel</span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleSkip}
-          className="ml-2 h-8 w-8 p-0"
-        >
+        <Button variant="ghost" size="sm" onClick={handleSkip} className="ml-2 h-8 w-8 p-0">
           <X className="h-4 w-4" />
         </Button>
       </div>

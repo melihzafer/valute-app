@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState } from 'react'
 import { X } from 'lucide-react'
 import { Button } from './Button'
+import { twMerge } from 'tailwind-merge'
 
 // Define context types
 interface DialogContextType {
@@ -19,7 +20,9 @@ export const Dialog: React.FC<{
   children: React.ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
-}> = ({ trigger, title, children, open: controlledOpen, onOpenChange }) => {
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'wide'
+  className?: string
+}> = ({ trigger, title, children, open: controlledOpen, onOpenChange, size = 'md', className }) => {
   const [internalOpen, setInternalOpen] = useState(false)
 
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen
@@ -36,19 +39,23 @@ export const Dialog: React.FC<{
         {trigger}
       </span>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div
-            className="bg-card border border-border rounded-xl shadow-2xl p-6 w-full max-w-md relative"
+            className={twMerge(
+              'bg-card border border-border rounded-xl shadow-2xl p-6 relative flex flex-col max-h-[90vh] w-full',
+              size === 'wide' ? 'max-w-5xl' : 'max-w-md',
+              className
+            )}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-4 flex-shrink-0">
               <h3 className="text-lg font-semibold text-foreground">{title}</h3>
               <Button variant="ghost" size="sm" onClick={() => setOpen(false)} className="p-1">
                 <X className="h-5 w-5" />
               </Button>
             </div>
             <DialogContext.Provider value={{ isOpen, setOpen }}>
-              <div>{children}</div>
+              <div className="overflow-y-auto flex-1 pr-1">{children}</div>
             </DialogContext.Provider>
           </div>
         </div>
@@ -98,15 +105,15 @@ export const DialogContent: React.FC<{ children: React.ReactNode; title: string 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md relative">
-        <div className="flex justify-between items-center mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md relative flex flex-col max-h-[90vh]">
+        <div className="flex justify-between items-center mb-4 flex-shrink-0">
           <h3 className="text-lg font-semibold">{title}</h3>
           <Button variant="ghost" size="sm" onClick={() => setOpen(false)} className="p-1">
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <div>{children}</div>
+        <div className="overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   )

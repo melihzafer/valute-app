@@ -5,6 +5,18 @@ out
 .eslintcache
 *.log*
 
+# Live user data — ASLA commit'lenmemeli (Q1, GROWTH_IDEAS).
+# drizzle/valute.db mevcut kullanıcı verisini içeriyor.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.vbackup
+
+# Test/build artifacts
+*.tsbuildinfo
+coverage/
+
 # Ignore all markdown files except README
 *.md
 !README.md

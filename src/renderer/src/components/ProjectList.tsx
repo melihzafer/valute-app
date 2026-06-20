@@ -1,30 +1,35 @@
 // src/renderer/src/components/ProjectList.tsx
 
 import React from 'react'
+import { FolderKanban } from 'lucide-react'
 import { Project } from '../../../shared/types'
 import ProjectCard from './ProjectCard'
+import { EmptyState } from './ui/EmptyState'
 
 interface ProjectListProps {
   projects: Project[]
   onSelectProject: (projectId: string) => void
   onEditProject: (project: Project) => void
   onDeleteProject: (projectId: string) => void
+  onCreateProject: () => void
 }
 
 const ProjectList: React.FC<ProjectListProps> = ({
   projects,
   onSelectProject,
   onEditProject,
-  onDeleteProject
+  onDeleteProject,
+  onCreateProject
 }) => {
   if (!projects || projects.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 px-4">
-        <div className="text-center space-y-2">
-          <p className="text-muted-foreground">No projects found.</p>
-          <p className="text-sm text-muted-foreground">Create your first project to get started!</p>
-        </div>
-      </div>
+      <EmptyState
+        icon={FolderKanban}
+        title="No projects found"
+        description="Create your first project to start tracking time, logs, and invoicing."
+        actionLabel="Create Project"
+        onActionClick={onCreateProject}
+      />
     )
   }
 

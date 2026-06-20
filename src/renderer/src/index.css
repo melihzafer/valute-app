@@ -39,40 +39,42 @@
   }
 
   .dark {
-    /* Dark Mode - Softer, Less Harsh */
-    --background: 222 20% 12%; /* Softer dark (was 3.9%) */
+    /* Dark Mode - Near-black */
+    --background: 222 25% 4%;
     --foreground: 210 20% 96%;
 
-    --card: 222 18% 15%; /* Lighter card background */
+    --card: 222 22% 7%;
     --card-foreground: 210 20% 96%;
 
-    --popover: 222 18% 15%;
+    --popover: 222 22% 7%;
     --popover-foreground: 210 20% 96%;
 
-    --primary: 247 60% 70%; /* Brighter, more visible */
-    --primary-foreground: 222 20% 12%;
+    --primary: 258 92% 68%; /* Vibrant saturated purple */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 15% 20%;
+    --secondary: 220 15% 12%;
     --secondary-foreground: 210 20% 96%;
 
-    --muted: 217 15% 20%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 220 15% 12%;
+    --muted-foreground: 215 18% 62%;
 
-    --accent: 217 15% 22%;
+    --accent: 220 15% 14%;
     --accent-foreground: 210 20% 96%;
 
     --destructive: 0 65% 55%;
     --destructive-foreground: 210 20% 96%;
 
-    --border: 217 15% 22%;
-    --input: 217 15% 22%;
-    --ring: 247 60% 70%;
+    --border: 220 15% 14%;
+    --input: 220 15% 14%;
+    --ring: 258 92% 68%;
   }
 }
 
 @layer base {
   * {
     @apply border-border transition-colors duration-200;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -86,4 +88,39 @@
   h6 {
     font-family: 'Outfit', sans-serif;
   }
+
+  /* Custom Modernized Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 9999px;
+    transition: background-color 0.2s;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.45);
+  }
+}
+
+/* Hide scrollbar utility class */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Hide default calendar picker indicator on date inputs */
+input[type='date']::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
 }

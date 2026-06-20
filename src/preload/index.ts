@@ -8,6 +8,9 @@ const api = {
   createProject: (data: unknown) => ipcRenderer.invoke('create-project', data),
   updateProject: (id: string, data: unknown) => ipcRenderer.invoke('update-project', id, data),
   deleteProject: (id: string) => ipcRenderer.invoke('delete-project', id),
+  projectOpenFolder: (path: string) => ipcRenderer.invoke('project:open-folder', path),
+  projectRunCommand: (command: string, cwd?: string) =>
+    ipcRenderer.invoke('project:run-command', command, cwd),
 
   // Logs
   getLogsByProject: (projectId: string) => ipcRenderer.invoke('get-logs-by-project', projectId),
@@ -54,6 +57,8 @@ const api = {
     filters?: Array<{ name: string; extensions: string[] }>
   }) => ipcRenderer.invoke('show-open-dialog', options),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
+  openDirectory: (dirPath: string) => ipcRenderer.invoke('open-directory', dirPath),
+  openApp: (appPath: string) => ipcRenderer.invoke('open-app', appPath),
 
   // Asset Vault
   createAsset: (data: {
@@ -136,9 +141,48 @@ const api = {
   saveMoodEntry: (data: unknown) => ipcRenderer.invoke('save-mood-entry', data),
   deleteMoodEntry: (id: string) => ipcRenderer.invoke('delete-mood-entry', id),
 
+  // M4 Health & Wellbeing
+  getHealthEntries: () => ipcRenderer.invoke('get-health-entries'),
+  saveHealthEntry: (data: unknown) => ipcRenderer.invoke('save-health-entry', data),
+  deleteHealthEntry: (id: string) => ipcRenderer.invoke('delete-health-entry', id),
+  getHealthStats: () => ipcRenderer.invoke('get-health-stats'),
+
   // M1/M2 Life dashboard + stats
   getLifeOverview: () => ipcRenderer.invoke('get-life-overview'),
   getLifeStats: (days?: number) => ipcRenderer.invoke('get-life-stats', days),
+
+  // M11 Calendar, Reminders & Notifications
+  getEvents: () => ipcRenderer.invoke('get-events'),
+  createEvent: (data: unknown) => ipcRenderer.invoke('create-event', data),
+  updateEvent: (id: string, data: unknown) => ipcRenderer.invoke('update-event', id, data),
+  deleteEvent: (id: string) => ipcRenderer.invoke('delete-event', id),
+  getCalendar: (startISO: string, endISO: string) =>
+    ipcRenderer.invoke('get-calendar', startISO, endISO),
+  getUpcoming: (days?: number) => ipcRenderer.invoke('get-upcoming', days),
+  testNotification: () => ipcRenderer.invoke('test-notification'),
+
+  // M10 AI Assistant
+  aiStatus: () => ipcRenderer.invoke('ai-status'),
+  aiChat: (messages: unknown, includeData?: boolean) =>
+    ipcRenderer.invoke('ai-chat', messages, includeData),
+  aiQuickAdd: (text: string) => ipcRenderer.invoke('ai-quick-add', text),
+  aiWeeklySummary: () => ipcRenderer.invoke('ai-weekly-summary'),
+  aiInsights: () => ipcRenderer.invoke('ai-insights'),
+
+  // M13 Backup / restore & templates
+  backupToFile: () => ipcRenderer.invoke('backup-to-file'),
+  restoreFromFile: () => ipcRenderer.invoke('restore-from-file'),
+  applyTemplate: (persona: string) => ipcRenderer.invoke('apply-template', persona),
+
+  // M12 Encrypted backup + companion server
+  backupToFileEncrypted: (passphrase: string) =>
+    ipcRenderer.invoke('backup-to-file-encrypted', passphrase),
+  restoreFromFileEncrypted: (passphrase: string) =>
+    ipcRenderer.invoke('restore-from-file-encrypted', passphrase),
+  backupAutoRunNow: () => ipcRenderer.invoke('backup-auto-run-now'),
+  companionStatus: () => ipcRenderer.invoke('companion-status'),
+  companionStart: (port?: number) => ipcRenderer.invoke('companion-start', port),
+  companionStop: () => ipcRenderer.invoke('companion-stop'),
 
   // Floating Timer
   openFloatingTimer: () => ipcRenderer.invoke('open-floating-timer'),
@@ -184,6 +228,7 @@ const api = {
   createPayment: (data: unknown) => ipcRenderer.invoke('create-payment', data),
   updatePayment: (id: string, data: unknown) => ipcRenderer.invoke('update-payment', id, data),
   deletePayment: (id: string) => ipcRenderer.invoke('delete-payment', id),
+  getAllPayments: () => ipcRenderer.invoke('get-all-payments'),
 
   // Settings
   getAllSettings: () => ipcRenderer.invoke('get-all-settings'),
@@ -245,7 +290,37 @@ const api = {
     return () => ipcRenderer.removeAllListeners('query-timer-state-for-reopen')
   },
   sendTimerStateForReopen: (isRunning: boolean) =>
-    ipcRenderer.send('timer-state-response-for-reopen', isRunning)
+    ipcRenderer.send('timer-state-response-for-reopen', isRunning),
+
+  // App Launcher
+  getLauncherApps: () => ipcRenderer.invoke('get-launcher-apps'),
+  setLauncherApps: (apps: unknown) => ipcRenderer.invoke('set-launcher-apps', apps),
+
+  // GitHub Integration
+  githubGetRepoSummary: (githubUrl: string) =>
+    ipcRenderer.invoke('github:get-repo-summary', githubUrl),
+  githubCreateIssue: (taskId: string, projectId: string, title: string, notes: string | null) =>
+    ipcRenderer.invoke('github:create-issue', taskId, projectId, title, notes),
+  githubSyncIssues: (projectId: string) => ipcRenderer.invoke('github:sync-issues', projectId),
+
+  // M15 — Project Hub (Terminal, Claude Code, Telegram, etc.)
+  projectOpenTerminal: (path: string, terminal: string) =>
+    ipcRenderer.invoke('project:open-terminal', path, terminal),
+  projectRunOpencode: (path: string) => ipcRenderer.invoke('project:run-opencode', path),
+  projectRunClaudeCode: (path: string, goal?: string) =>
+    ipcRenderer.invoke('project:run-claude-code', path, goal),
+  projectStopClaudeCode: () => ipcRenderer.invoke('project:stop-claude-code'),
+  projectGetClaudeStatus: () => ipcRenderer.invoke('project:get-claude-status'),
+  telegramSendMessage: (text: string) => ipcRenderer.invoke('telegram:send-message', text),
+  telegramTestConnection: () => ipcRenderer.invoke('telegram:test-connection'),
+  aiChatOllama: (model: string, messages: unknown[]) =>
+    ipcRenderer.invoke('ai:chat-ollama', model, messages),
+  aiChatOpenRouter: (model: string, messages: unknown[]) =>
+    ipcRenderer.invoke('ai:chat-openrouter', model, messages),
+  aiChatOpenAI: (baseUrl: string, model: string, messages: unknown[]) =>
+    ipcRenderer.invoke('ai:chat-openai', baseUrl, model, messages),
+  aiListOllamaModels: () => ipcRenderer.invoke('ai:list-ollama-models'),
+  aiListOpenRouterModels: () => ipcRenderer.invoke('ai:list-openrouter-models')
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

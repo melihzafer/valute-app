@@ -1,12 +1,25 @@
 // src/renderer/src/components/DailyReportPanel.tsx
-// HOT feature: paste an end-of-day report -> auto-saves to disk as a .md file
-// and shows it in an in-app timeline.
+// paste an end-of-day report -> auto-saves to disk as a .md file
+// and shows it in an in-app timeline with accordion toggles and markdown preview.
 
 import React, { useState, useEffect, useCallback } from 'react'
 import type { DailyReportIPC, Log } from '../../../shared/types'
 import { Button } from './ui/Button'
 import { Textarea } from './ui/Textarea'
-import { FileText, Save, Trash2, ExternalLink, Loader2, Check, Clock } from 'lucide-react'
+import {
+  FileText,
+  Save,
+  Trash2,
+  ExternalLink,
+  Loader2,
+  Check,
+  Clock,
+  ChevronDown,
+  ChevronRight,
+  Edit2,
+  X
+} from 'lucide-react'
+import { cn } from '../lib/utils'
 
 interface DailyReportPanelProps {
   projectId: string
@@ -26,6 +39,259 @@ const formatDuration = (seconds: number): string => {
   return `${h}h ${m}m`
 }
 
+function parseInline(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = []
+  let lastIndex = 0
+  const regex = /(\*\*|`)(.*?)\1/g
+  let match: RegExpExecArray | null
+
+  while ((match = regex.exec(text)) !== null) {
+    const type = match[1]
+    const content = match[2]
+    const index = match.index
+
+    if (index > lastIndex) {
+      parts.push(text.slice(lastIndex, index))
+    }
+
+    if (type === '**') {
+      parts.push(
+        <strong key={index} className="font-bold text-foreground">
+          {content}
+        </strong>
+      )
+    } else {
+      parts.push(
+        <code key={index} className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
+          {content}
+        </code>
+      )
+    }
+
+    lastIndex = regex.lastIndex
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts.length > 0 ? parts : [text]
+}
+
+const MarkdownPreview: React.FC<{ content: string }> = ({ content }) => {
+  const lines = content.split('\n')
+
+  return (
+    <div className="space-y-1.5 text-sm text-foreground/90 font-sans leading-relaxed">
+      {lines.map((line, idx) => {
+        // Headings
+        if (line.startsWith('# ')) {
+          return (
+            <h1 key={idx} className="text-xl font-bold mt-4 mb-2 text-foreground">
+              {parseInline(line.slice(2))}
+            </h1>
+          )
+        }
+        if (line.startsWith('## ')) {
+          return (
+            <h2 key={idx} className="text-lg font-bold mt-3 mb-1.5 text-foreground">
+              {parseInline(line.slice(3))}
+            </h2>
+          )
+        }
+        if (line.startsWith('### ')) {
+          return (
+            <h3 key={idx} className="text-base font-bold mt-2 mb-1 text-foreground">
+              {parseInline(line.slice(4))}
+            </h3>
+          )
+        }
+
+        // Bullet Lists
+        if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+          const contentStr = line.trim().slice(2)
+          return (
+            <ul key={idx} className="list-disc list-inside pl-4 space-y-1 my-0.5">
+              <li>{parseInline(contentStr)}</li>
+            </ul>
+          )
+        }
+
+        // Numbered Lists
+        const numMatch = line.trim().match(/^(\d+)\.\s(.*)$/)
+        if (numMatch) {
+          return (
+            <ol key={idx} className="list-decimal list-inside pl-4 space-y-1 my-0.5">
+              <li>{parseInline(numMatch[2])}</li>
+            </ol>
+          )
+        }
+
+        // Empty line
+        if (line.trim() === '') {
+          return <div key={idx} className="h-1.5" />
+        }
+
+        // Standard paragraph
+        return <p key={idx}>{parseInline(line)}</p>
+      })}
+    </div>
+  )
+}
+
+interface DailyReportItemProps {
+  report: DailyReportIPC
+  projectId: string
+  dayKey: string
+  tracked: number
+  onRefresh: () => Promise<void>
+  onDelete: (id: string) => Promise<void>
+}
+
+const DailyReportItem: React.FC<DailyReportItemProps> = ({
+  report,
+  projectId,
+  dayKey,
+  tracked,
+  onRefresh,
+  onDelete
+}) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editContent, setEditContent] = useState(report.content)
+  const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    setEditContent(report.content)
+  }, [report.content])
+
+  const handleUpdate = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!editContent.trim()) return
+    setIsSaving(true)
+    try {
+      const res = await window.api.saveDailyReport(projectId, editContent.trim(), report.reportDate)
+      if (res.success) {
+        setIsEditing(false)
+        await onRefresh()
+      } else {
+        console.error('Failed to update daily report:', res.error)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-card border border-border/50 rounded-xl overflow-hidden transition-all duration-200 hover:border-border/80">
+      {/* Header / Accordion Toggle */}
+      <div
+        onClick={() => {
+          if (!isEditing) setIsOpen(!isOpen)
+        }}
+        className={cn(
+          'flex items-center justify-between p-4 cursor-pointer select-none hover:bg-accent/30 transition-colors',
+          isOpen && 'border-b border-border/50 bg-accent/10'
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <div className="text-muted-foreground">
+            {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </div>
+          <span className="text-sm font-semibold text-foreground">{dayKey}</span>
+          {tracked > 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-2.5 py-0.5 rounded-full">
+              <Clock className="h-3 w-3 text-primary/70" />
+              {formatDuration(tracked)} tracked
+            </span>
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          {!isEditing && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                title="Edit Report"
+                onClick={() => {
+                  setIsOpen(true)
+                  setIsEditing(true)
+                }}
+              >
+                <Edit2 className="h-3.5 w-3.5" />
+              </Button>
+              {report.filePath && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  title="Open file"
+                  onClick={() => window.api.openDailyReportFile(report.filePath!)}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                title="Delete"
+                onClick={() => onDelete(report.id)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Expanded Content */}
+      {isOpen && (
+        <div className="p-4 bg-card animate-in fade-in slide-in-from-top-1 duration-150">
+          {isEditing ? (
+            <div className="space-y-3">
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="min-h-[140px] resize-y font-mono text-sm w-full"
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsEditing(false)
+                    setEditContent(report.content)
+                  }}
+                  disabled={isSaving}
+                >
+                  <X className="h-3.5 w-3.5 mr-1" />
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleUpdate} disabled={isSaving || !editContent.trim()}>
+                  {isSaving ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                  ) : (
+                    <Save className="h-3.5 w-3.5 mr-1" />
+                  )}
+                  Save
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <MarkdownPreview content={report.content} />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 const DailyReportPanel: React.FC<DailyReportPanelProps> = ({ projectId, logs }) => {
   const [draft, setDraft] = useState('')
   const [reports, setReports] = useState<DailyReportIPC[]>([])
@@ -40,7 +306,6 @@ const DailyReportPanel: React.FC<DailyReportPanelProps> = ({ projectId, logs }) 
     refresh()
   }, [refresh])
 
-  // Tracked seconds bucketed by YYYY-MM-DD, to annotate each report with that day's hours.
   const trackedByDay = React.useMemo(() => {
     const map: Record<string, number> = {}
     for (const log of logs) {
@@ -116,53 +381,21 @@ const DailyReportPanel: React.FC<DailyReportPanelProps> = ({ projectId, logs }) 
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {reports.map((report) => {
             const date = new Date(report.reportDate)
             const dayKey = toDateKey(date)
-            const tracked = trackedByDay[dayKey]
+            const tracked = trackedByDay[dayKey] || 0
             return (
-              <div
+              <DailyReportItem
                 key={report.id}
-                className="bg-card border border-border/50 rounded-lg p-4 space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-foreground">{dayKey}</span>
-                    {tracked > 0 && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {formatDuration(tracked)} tracked
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {report.filePath && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-1 h-auto"
-                        title="Open file"
-                        onClick={() => window.api.openDailyReportFile(report.filePath!)}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-1 h-auto text-muted-foreground hover:text-destructive"
-                      title="Delete"
-                      onClick={() => handleDelete(report.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <pre className="whitespace-pre-wrap break-words text-sm text-foreground/90 font-sans">
-                  {report.content}
-                </pre>
-              </div>
+                report={report}
+                projectId={projectId}
+                dayKey={dayKey}
+                tracked={tracked}
+                onRefresh={refresh}
+                onDelete={handleDelete}
+              />
             )
           })}
         </div>

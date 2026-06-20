@@ -41,6 +41,8 @@ function taskToIPC(row: TaskRow): TaskIPC {
     projectId: row.projectId,
     goalId: row.goalId,
     sortOrder: row.sortOrder ?? 0,
+    githubIssueNumber: row.githubIssueNumber,
+    githubIssueUrl: row.githubIssueUrl,
     createdAt: iso(row.createdAt) || new Date().toISOString(),
     completedAt: iso(row.completedAt)
   }
@@ -61,6 +63,8 @@ export async function createTask(data: {
   dueDate?: string | null
   projectId?: string | null
   goalId?: string | null
+  githubIssueNumber?: number | null
+  githubIssueUrl?: string | null
 }): Promise<TaskIPC> {
   const db = getDb()
   const row = {
@@ -74,6 +78,8 @@ export async function createTask(data: {
     projectId: data.projectId ?? null,
     goalId: data.goalId ?? null,
     sortOrder: 0,
+    githubIssueNumber: data.githubIssueNumber ?? null,
+    githubIssueUrl: data.githubIssueUrl ?? null,
     createdAt: new Date(),
     completedAt: null
   }
@@ -94,6 +100,8 @@ export async function updateTask(
     dueDate: string | null
     projectId: string | null
     goalId: string | null
+    githubIssueNumber: number | null
+    githubIssueUrl: string | null
   }>
 ): Promise<TaskIPC> {
   const db = getDb()
@@ -105,6 +113,8 @@ export async function updateTask(
   if (data.dueDate !== undefined) updateData.dueDate = data.dueDate ? new Date(data.dueDate) : null
   if (data.projectId !== undefined) updateData.projectId = data.projectId
   if (data.goalId !== undefined) updateData.goalId = data.goalId
+  if (data.githubIssueNumber !== undefined) updateData.githubIssueNumber = data.githubIssueNumber
+  if (data.githubIssueUrl !== undefined) updateData.githubIssueUrl = data.githubIssueUrl
   if (data.status !== undefined) {
     updateData.status = data.status
     updateData.completedAt = data.status === 'done' ? new Date() : null

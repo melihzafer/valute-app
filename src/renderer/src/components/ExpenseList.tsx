@@ -76,13 +76,13 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
           <div>
             <p className="text-sm text-muted-foreground">Total Expenses</p>
             <p className="text-xl font-semibold text-foreground">
-              {formatCurrency(totalExpenses / 100, currency)}
+              {formatCurrency(totalExpenses, currency)}
             </p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Billable</p>
             <p className="text-xl font-semibold text-green-400">
-              {formatCurrency(billableExpenses / 100, currency)}
+              {formatCurrency(billableExpenses, currency)}
             </p>
           </div>
         </div>
@@ -200,7 +200,7 @@ const ExpenseList: React.FC<ExpenseListProps> = ({
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm text-foreground text-right font-medium">
-                    {formatCurrency(expense.amount / 100, currency)}
+                    {formatCurrency(expense.amount, currency)}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <button

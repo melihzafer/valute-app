@@ -44,3 +44,24 @@ export const calculateEarnings = (elapsedSeconds: number, hourlyRate: number): n
   const hours = elapsedSeconds / 3600 // Convert seconds to hours
   return hours * hourlyRate
 }
+
+// Helper to format/expand GitHub shorthand to a full URL (e.g. "username/repo" -> "https://github.com/username/repo")
+export const formatGithubUrl = (url: string): string => {
+  const trimmed = url.trim()
+  if (!trimmed) return ''
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed
+  }
+
+  if (trimmed.startsWith('github.com/')) {
+    return `https://${trimmed}`
+  }
+
+  const parts = trimmed.split('/')
+  if (parts.length === 2 && parts[0] && parts[1] && !trimmed.includes(' ')) {
+    return `https://github.com/${trimmed}`
+  }
+
+  return trimmed
+}

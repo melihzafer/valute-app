@@ -1,14 +1,18 @@
-// src/renderer/src/components/clients/LedgerTable.tsx
-
 import React from 'react'
-import { FileText, DollarSign } from 'lucide-react'
+import { FileText, DollarSign, Pencil, Trash2 } from 'lucide-react'
 import type { LedgerEntry } from '../../../../shared/types'
 
 interface LedgerTableProps {
   entries: LedgerEntry[]
+  onEditPayment?: (paymentId: string) => void
+  onDeletePayment?: (paymentId: string) => void
 }
 
-export const LedgerTable: React.FC<LedgerTableProps> = ({ entries }) => {
+export const LedgerTable: React.FC<LedgerTableProps> = ({
+  entries,
+  onEditPayment,
+  onDeletePayment
+}) => {
   const formatCurrency = (cents: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -29,12 +33,12 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ entries }) => {
       <div className="text-center py-12">
         <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h3 className="font-medium">No transactions yet</h3>
-        <p className="text-muted-foreground text-sm mt-1">
-          Invoices and payments will appear here
-        </p>
+        <p className="text-muted-foreground text-sm mt-1">Invoices and payments will appear here</p>
       </div>
     )
   }
+
+  const showActions = onEditPayment || onDeletePayment
 
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
@@ -52,6 +56,11 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ entries }) => {
             <th className="text-right text-sm font-medium text-muted-foreground px-4 py-3">
               Balance
             </th>
+            {showActions && (
+              <th className="text-center text-sm font-medium text-muted-foreground px-4 py-3 w-24">
+                Actions
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -94,6 +103,32 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({ entries }) => {
               >
                 {formatCurrency(entry.runningBalance)}
               </td>
+              {showActions && (
+                <td className="px-4 py-3 text-sm text-center">
+                  {entry.type === 'payment' && (
+                    <div className="flex items-center justify-center gap-1">
+                      {onEditPayment && (
+                        <button
+                          onClick={() => onEditPayment(entry.referenceId)}
+                          className="p-1 text-muted-foreground hover:text-primary rounded hover:bg-muted transition-colors"
+                          title="Edit Payment"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      {onDeletePayment && (
+                        <button
+                          onClick={() => onDeletePayment(entry.referenceId)}
+                          className="p-1 text-muted-foreground hover:text-destructive rounded hover:bg-muted transition-colors"
+                          title="Delete Payment"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

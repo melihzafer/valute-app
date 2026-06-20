@@ -30,7 +30,7 @@ const FocusNudgePage: React.FC = () => {
 
   return (
     <div className="h-screen w-screen overflow-hidden select-none">
-      <div 
+      <div
         className="h-full w-full right-0 top-0 bg-zinc-900/95 backdrop-blur-xl rounded-2xl border border-zinc-700/50 shadow-2xl flex flex-col"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
@@ -49,8 +49,8 @@ const FocusNudgePage: React.FC = () => {
         <div className="flex-1 p-4 space-y-3">
           <p className="text-sm text-zinc-200">
             You've been working on{' '}
-            <span className="font-semibold text-blue-400">"{projectName}"</span>{' '}
-            for <span className="font-semibold">{formatTime(elapsedSeconds)}</span>.
+            <span className="font-semibold text-blue-400">"{projectName}"</span> for{' '}
+            <span className="font-semibold">{formatTime(elapsedSeconds)}</span>.
           </p>
           <p className="text-xs text-zinc-400">Are you still focused on this task?</p>
         </div>

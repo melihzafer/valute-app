@@ -20,9 +20,7 @@ export async function getClientById(id: string): Promise<Client | null> {
   return result ? (result as Client) : null
 }
 
-export async function createClient(
-  clientData: Omit<Client, 'id' | 'createdAt'>
-): Promise<Client> {
+export async function createClient(clientData: Omit<Client, 'id' | 'createdAt'>): Promise<Client> {
   const db = getDb()
 
   const newClient = {
@@ -175,7 +173,11 @@ export async function getClientLedger(clientId: string): Promise<LedgerEntry[]> 
   const clientInvoices: LedgerEntry[] = []
   if (projectIds.length > 0) {
     for (const projectId of projectIds) {
-      const projectInvoices = db.select().from(invoices).where(eq(invoices.projectId, projectId)).all()
+      const projectInvoices = db
+        .select()
+        .from(invoices)
+        .where(eq(invoices.projectId, projectId))
+        .all()
 
       for (const inv of projectInvoices) {
         clientInvoices.push({

@@ -52,7 +52,9 @@ const ScreenshotCountdownPage: React.FC = () => {
             <Camera className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground tracking-tight">Screenshot Incoming</h2>
+            <h2 className="text-lg font-bold text-foreground tracking-tight">
+              Screenshot Incoming
+            </h2>
             <p className="text-sm text-muted-foreground">Preparing to capture your screen...</p>
           </div>
         </div>

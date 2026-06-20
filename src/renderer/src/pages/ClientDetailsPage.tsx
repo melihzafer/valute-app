@@ -17,9 +17,10 @@ import {
 import { useClientStore } from '../store/useClientStore'
 import { Button } from '../components/ui/Button'
 import { RecordPaymentDialog } from '../components/clients/RecordPaymentDialog'
+import { EditPaymentDialog } from '../components/clients/EditPaymentDialog'
 import { EditClientDialog } from '../components/clients/EditClientDialog'
 import { LedgerTable } from '../components/clients/LedgerTable'
-import type { ProjectIPC, ClientBalance } from '../../../shared/types'
+import type { ProjectIPC, ClientBalance, Payment } from '../../../shared/types'
 
 type TabType = 'overview' | 'projects' | 'ledger'
 
@@ -29,9 +30,11 @@ const ClientDetailsPage: React.FC = () => {
   const {
     currentClient,
     currentLedger,
+    currentPayments,
     selectClient,
     clearCurrentClient,
     deleteClient,
+    deletePayment,
     isLoading
   } = useClientStore()
 
@@ -40,7 +43,25 @@ const ClientDetailsPage: React.FC = () => {
   const [clientBalance, setClientBalance] = useState<ClientBalance | null>(null)
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isEditPaymentDialogOpen, setIsEditPaymentDialogOpen] = useState(false)
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleEditPayment = (paymentId: string) => {
+    const pmt = currentPayments.find((p) => p.id === paymentId)
+    if (pmt) {
+      setSelectedPayment(pmt)
+      setIsEditPaymentDialogOpen(true)
+    }
+  }
+
+  const handleDeletePayment = async (paymentId: string) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this payment?')
+    if (confirmDelete) {
+      await deletePayment(paymentId)
+      if (id) fetchClientData(id)
+    }
+  }
 
   useEffect(() => {
     if (id) {
@@ -214,7 +235,10 @@ const ClientDetailsPage: React.FC = () => {
                 {currentClient.email && (
                   <div className="flex items-center gap-3 text-sm">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    <a href={`mailto:${currentClient.email}`} className="text-primary hover:underline">
+                    <a
+                      href={`mailto:${currentClient.email}`}
+                      className="text-primary hover:underline"
+                    >
                       {currentClient.email}
                     </a>
                   </div>
@@ -252,7 +276,9 @@ const ClientDetailsPage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Total Invoiced</span>
-                    <span className="font-medium">{formatCurrency(clientBalance.totalInvoiced)}</span>
+                    <span className="font-medium">
+                      {formatCurrency(clientBalance.totalInvoiced)}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Total Paid</span>
@@ -263,7 +289,9 @@ const ClientDetailsPage: React.FC = () => {
                   <div className="border-t border-border pt-4">
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Current Balance</span>
-                      <span className={`text-xl font-bold ${getBalanceColor(clientBalance.balance)}`}>
+                      <span
+                        className={`text-xl font-bold ${getBalanceColor(clientBalance.balance)}`}
+                      >
                         {formatCurrency(Math.abs(clientBalance.balance))}
                       </span>
                     </div>
@@ -323,7 +351,13 @@ const ClientDetailsPage: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'ledger' && <LedgerTable entries={currentLedger} />}
+        {activeTab === 'ledger' && (
+          <LedgerTable
+            entries={currentLedger}
+            onEditPayment={handleEditPayment}
+            onDeletePayment={handleDeletePayment}
+          />
+        )}
       </div>
 
       {/* Dialogs */}
@@ -341,6 +375,16 @@ const ClientDetailsPage: React.FC = () => {
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         client={currentClient}
+      />
+
+      <EditPaymentDialog
+        open={isEditPaymentDialogOpen}
+        onOpenChange={setIsEditPaymentDialogOpen}
+        payment={selectedPayment}
+        clientName={currentClient.name}
+        onSuccess={() => {
+          if (id) fetchClientData(id)
+        }}
       />
     </div>
   )

@@ -6,7 +6,14 @@ import type { CourseIPC, AssignmentIPC, AssignmentStatus } from '../../../shared
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Dialog } from '../components/ui/Dialog'
-import { GraduationCap, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
+import {
+  GraduationCap,
+  Plus,
+  Trash2,
+  ChevronDown,
+  ChevronRight,
+  Calendar as CalendarIcon
+} from 'lucide-react'
 
 const UniversityPage: React.FC = () => {
   const [courses, setCourses] = useState<CourseIPC[]>([])
@@ -339,12 +346,22 @@ const CourseRow: React.FC<{
                 className="h-9"
               />
             </div>
-            <Input
-              type="date"
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
-              className="w-40 h-9"
-            />
+            <div className="relative">
+              <Input
+                type="date"
+                value={due}
+                onChange={(e) => setDue(e.target.value)}
+                onClick={(e) => {
+                  try {
+                    e.currentTarget.showPicker()
+                  } catch {}
+                }}
+                className="w-40 h-9 pr-10 cursor-pointer"
+              />
+              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-muted-foreground">
+                <CalendarIcon className="h-4 w-4" />
+              </div>
+            </div>
             <Input
               type="number"
               value={weight}

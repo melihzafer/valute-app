@@ -35,7 +35,10 @@ export function getScreenshotsDir(): string {
 }
 
 // Capture the screen and save to file
-export async function captureScreen(projectId: string, logId: string | null = null): Promise<ScreenshotIPC> {
+export async function captureScreen(
+  projectId: string,
+  logId: string | null = null
+): Promise<ScreenshotIPC> {
   const db = getDb()
 
   // Get blur settings
@@ -54,7 +57,7 @@ export async function captureScreen(projectId: string, logId: string | null = nu
 
   const primaryScreen = sources[0]
   const image = primaryScreen.thumbnail
-  
+
   let pngBuffer: Buffer
 
   // Apply blur if needed
@@ -62,22 +65,22 @@ export async function captureScreen(projectId: string, logId: string | null = nu
     // Convert to bitmap and apply blur using canvas
     const size = image.getSize()
     const bitmap = image.toBitmap()
-    
+
     // Create canvas to manipulate image
     const { createCanvas } = require('canvas')
     const canvas = createCanvas(size.width, size.height)
     const ctx = canvas.getContext('2d')
-    
+
     // Create ImageData from bitmap
     const imageData = ctx.createImageData(size.width, size.height)
     imageData.data.set(bitmap)
     ctx.putImageData(imageData, 0, 0)
-    
+
     // Apply blur filter
     const blurAmount = blurIntensity === 'low' ? 8 : 20
     ctx.filter = `blur(${blurAmount}px)`
     ctx.drawImage(canvas, 0, 0)
-    
+
     // Convert back to PNG
     pngBuffer = canvas.toBuffer('image/png')
   } else {
@@ -292,7 +295,10 @@ export function hasPendingCapture(): boolean {
 }
 
 // Export single screenshot
-export async function exportScreenshot(filePath: string, destinationPath?: string): Promise<string> {
+export async function exportScreenshot(
+  filePath: string,
+  destinationPath?: string
+): Promise<string> {
   let exportPath = destinationPath
 
   if (!exportPath) {
@@ -312,7 +318,9 @@ export async function exportScreenshot(filePath: string, destinationPath?: strin
 }
 
 // Export all screenshots for a project
-export async function exportAllScreenshots(projectId: string): Promise<{ count: number; folder: string }> {
+export async function exportAllScreenshots(
+  projectId: string
+): Promise<{ count: number; folder: string }> {
   const db = getDb()
 
   const result = await dialog.showOpenDialog({

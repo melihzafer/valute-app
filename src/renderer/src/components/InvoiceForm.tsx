@@ -7,7 +7,7 @@ import { calculateEarnings } from '../lib/utils'
 import { Button } from './ui/Button'
 import { Input } from './ui/Input'
 import { Select } from './ui/Select'
-import { FileText } from 'lucide-react'
+import { FileText, Calendar as CalendarIcon } from 'lucide-react'
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF']
 
@@ -117,27 +117,49 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
           <label htmlFor="issueDate" className="block text-sm font-medium text-gray-700">
             Issue Date
           </label>
-          <Input
-            type="date"
-            id="issueDate"
-            value={issueDate}
-            onChange={(e) => setIssueDate(e.target.value)}
-            required
-          />
+          <div className="relative">
+            <Input
+              type="date"
+              id="issueDate"
+              value={issueDate}
+              onChange={(e) => setIssueDate(e.target.value)}
+              onClick={(e) => {
+                try {
+                  e.currentTarget.showPicker()
+                } catch {}
+              }}
+              required
+              className="pr-10 cursor-pointer"
+            />
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-muted-foreground">
+              <CalendarIcon className="h-4 w-4" />
+            </div>
+          </div>
         </div>
 
         <div>
           <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700">
             Due Date
           </label>
-          <Input
-            type="date"
-            id="dueDate"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            min={issueDate} // Due date should be after issue date
-            required
-          />
+          <div className="relative">
+            <Input
+              type="date"
+              id="dueDate"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              onClick={(e) => {
+                try {
+                  e.currentTarget.showPicker()
+                } catch {}
+              }}
+              min={issueDate} // Due date should be after issue date
+              required
+              className="pr-10 cursor-pointer"
+            />
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-muted-foreground">
+              <CalendarIcon className="h-4 w-4" />
+            </div>
+          </div>
         </div>
 
         <div>

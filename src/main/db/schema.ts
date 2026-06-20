@@ -31,6 +31,9 @@ export const projects = sqliteTable('projects', {
   category: text('category').default('work'), // 'work' | 'hobby' | 'personal' (M6 — same engine, different life area)
   assetsPath: text('assets_path'), // Local folder path for project files
   notes: text('notes'), // The Canvas - persistent project notes
+  githubUrl: text('github_url'), // Repository URL for one-click open
+  localPath: text('local_path'), // Local directory for one-click open
+  runCommand: text('run_command'), // Command to execute for project
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
 })
 
@@ -196,6 +199,8 @@ export const tasks = sqliteTable('tasks', {
   projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
   goalId: text('goal_id'),
   sortOrder: integer('sort_order').default(0),
+  githubIssueNumber: integer('github_issue_number'),
+  githubIssueUrl: text('github_issue_url'),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   completedAt: integer('completed_at', { mode: 'timestamp' })
 })
@@ -275,6 +280,39 @@ export const moodEntries = sqliteTable('mood_entries', {
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
 })
 
+// health_entries: Daily sleep, workouts, water, weight, steps, energy (M4)
+export const healthEntries = sqliteTable('health_entries', {
+  id: text('id').primaryKey(),
+  date: text('date').notNull(), // 'YYYY-MM-DD' (one per day)
+  sleepHours: real('sleep_hours'),
+  waterMl: integer('water_ml'),
+  workoutDuration: integer('workout_duration'), // minutes
+  workoutType: text('workout_type'),
+  weight: real('weight'),
+  steps: integer('steps'),
+  energyLevel: integer('energy_level'), // 1-5
+  notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
+// events: Calendar events & reminders (M11) — unified across every life area
+export const events = sqliteTable('events', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description'),
+  area: text('area').default('general'), // life area tag
+  startTime: integer('start_time', { mode: 'timestamp' }).notNull(),
+  endTime: integer('end_time', { mode: 'timestamp' }),
+  allDay: integer('all_day', { mode: 'boolean' }).default(false),
+  location: text('location'),
+  color: text('color').default('#6366f1'),
+  recurrence: text('recurrence').default('none'), // 'none' | 'daily' | 'weekly' | 'monthly'
+  reminderMinutes: integer('reminder_minutes'), // minutes before start to notify; null = no reminder
+  notifiedFor: text('notified_for'), // ISO of the occurrence we already fired a reminder for
+  projectId: text('project_id').references(() => projects.id, { onDelete: 'set null' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date())
+})
+
 // Export types for TypeScript
 export type Project = typeof projects.$inferSelect
 export type NewProject = typeof projects.$inferInsert
@@ -335,3 +373,9 @@ export type NewAssignment = typeof assignments.$inferInsert
 
 export type MoodEntry = typeof moodEntries.$inferSelect
 export type NewMoodEntry = typeof moodEntries.$inferInsert
+
+export type HealthEntry = typeof healthEntries.$inferSelect
+export type NewHealthEntry = typeof healthEntries.$inferInsert
+
+export type Event = typeof events.$inferSelect
+export type NewEvent = typeof events.$inferInsert

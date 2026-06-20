@@ -91,6 +91,9 @@ export interface Project {
   workflowStatus?: 'active' | 'on_hold' | 'done' // Lifecycle, independent of archived
   category?: ProjectCategory // M6: work | hobby | personal
   notes?: string // The Canvas - persistent project notes
+  githubUrl?: string // Repository URL for one-click open
+  localPath?: string // Local directory for one-click open
+  runCommand?: string // Command to execute for project
   createdAt: Date
 }
 
@@ -109,6 +112,9 @@ export interface ProjectIPC {
   workflowStatus?: 'active' | 'on_hold' | 'done'
   category?: ProjectCategory // M6: work | hobby | personal
   notes?: string
+  githubUrl?: string // Repository URL for one-click open
+  localPath?: string // Local directory for one-click open
+  runCommand?: string // Command to execute for project
   createdAt: string
 }
 
@@ -310,6 +316,8 @@ export interface TaskIPC {
   projectId: string | null
   goalId: string | null
   sortOrder: number
+  githubIssueNumber?: number | null
+  githubIssueUrl?: string | null
   createdAt: string
   completedAt: string | null
 }
@@ -459,6 +467,7 @@ export interface RecentActivityItem {
   earnings: number // cents
   date: string // ISO string
   notes: string | null
+  type?: 'log' | 'payment'
 }
 
 // --- Settings Types (Phase 9) ---
@@ -483,10 +492,15 @@ export interface ScreenshotSettings {
   blurIntensity: 'off' | 'low' | 'high'
 }
 
+export interface GithubSettings {
+  pat: string
+}
+
 export interface AppSettings {
   general: GeneralSettings
   focus: FocusSettings
   screenshot: ScreenshotSettings
+  github: GithubSettings
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -503,7 +517,17 @@ export const DEFAULT_SETTINGS: AppSettings = {
     frequency: 10,
     notifyBeforeCapture: true,
     blurIntensity: 'off'
+  },
+  github: {
+    pat: ''
   }
+}
+
+// Launcher app shortcut (one-click app opener)
+export interface LauncherApp {
+  id: string
+  name: string
+  path: string
 }
 
 // Database Export/Import types
@@ -540,4 +564,185 @@ export interface ScreenshotIPC {
   filePath: string
   timestamp: string
   createdAt: string
+}
+
+// M4 — Health & Wellbeing
+export interface HealthEntryIPC {
+  id: string
+  date: string // YYYY-MM-DD
+  sleepHours: number | null
+  waterMl: number | null
+  workoutDuration: number | null // minutes
+  workoutType: string | null
+  weight: number | null
+  steps: number | null
+  energyLevel: number | null // 1-5
+  notes: string | null
+  createdAt: string
+}
+
+export interface HealthStats {
+  waterLoggedToday: number
+  stepsLoggedToday: number
+  sleepLoggedToday: number
+  avgSleepHours7: number | null
+  avgSteps7: number | null
+  totalWater7: number
+  workoutCount7: number
+  workoutMinutes7: number
+  weightHistory: { date: string; weight: number | null }[]
+  sleepHistory: { date: string; hours: number | null }[]
+  stepsHistory: { date: string; steps: number | null }[]
+}
+
+// ============================================================
+// M11 — Calendar, Reminders & Notifications
+// ============================================================
+
+export type EventRecurrence = 'none' | 'daily' | 'weekly' | 'monthly'
+
+export interface EventIPC {
+  id: string
+  title: string
+  description: string | null
+  area: LifeArea
+  startTime: string // ISO
+  endTime: string | null // ISO
+  allDay: boolean
+  location: string | null
+  color: string
+  recurrence: EventRecurrence
+  reminderMinutes: number | null
+  projectId: string | null
+  createdAt: string
+}
+
+// A single dated item shown on the unified calendar. Aggregates manual events
+// plus deadlines pulled from tasks, assignments and invoices.
+export type CalendarSource = 'event' | 'task' | 'assignment' | 'invoice' | 'habit'
+
+export interface CalendarItem {
+  id: string // unique per occurrence (e.g. `${refId}@${date}`)
+  refId: string // underlying row id (for navigation / editing)
+  source: CalendarSource
+  title: string
+  date: string // ISO start (or due) time
+  endDate: string | null
+  allDay: boolean
+  area: LifeArea
+  color: string
+  meta: string | null // course name, invoice amount, project name, etc.
+  done: boolean // for tasks/assignments — completed?
+  route: string // in-app route to jump to the source
+}
+
+export interface NotificationSettings {
+  enabled: boolean
+  dailyBriefing: boolean // morning summary of what's due today
+  briefingHour: number // 0-23, hour to fire the daily briefing
+}
+
+// ============================================================
+// M10 — AI Assistant & Smart Automation
+// ============================================================
+
+export interface AIStatus {
+  configured: boolean
+  model: string
+}
+
+export interface AIChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface QuickAddResult {
+  created: boolean
+  kind: string
+  summary: string
+}
+
+// ============================================================
+// M12 — Companion & Sync
+// ============================================================
+
+export interface CompanionStatus {
+  running: boolean
+  port: number
+  token: string
+  urls: string[]
+}
+
+// ============================================================
+// M15 — Project Hub (Project Management Widget)
+// ============================================================
+
+export type TerminalType = 'auto' | 'warp' | 'wt' | 'cmd' | 'pwsh'
+
+export type AIProvider = 'anthropic' | 'ollama' | 'openrouter' | 'openai-compatible'
+
+export interface TelegramSettings {
+  botToken: string
+  chatId: string
+  enabled: boolean
+}
+
+export interface ProjectHubSettings {
+  defaultTerminal: TerminalType
+  aiProvider: AIProvider
+  ollamaUrl: string
+  ollamaModel: string
+  openRouterKey: string
+  openRouterModel: string
+  openaiBaseUrl: string
+  openaiKey: string
+  openaiModel: string
+  telegram: TelegramSettings
+  claudeGoalTracking: boolean
+  claudeOutputMonitoring: boolean
+}
+
+export const DEFAULT_PROJECT_HUB_SETTINGS: ProjectHubSettings = {
+  defaultTerminal: 'auto',
+  aiProvider: 'anthropic',
+  ollamaUrl: 'http://localhost:11434',
+  ollamaModel: 'llama3.2:8b',
+  openRouterKey: '',
+  openRouterModel: 'openrouter/free',
+  openaiBaseUrl: '',
+  openaiKey: '',
+  openaiModel: 'gpt-4o-mini',
+  telegram: {
+    botToken: '',
+    chatId: '',
+    enabled: false
+  },
+  claudeGoalTracking: true,
+  claudeOutputMonitoring: true
+}
+
+export interface ClaudeGoalSession {
+  id: string
+  projectId: string
+  projectName: string
+  projectPath?: string
+  goal: string
+  pid: number | null
+  status: 'running' | 'completed' | 'failed' | 'stopped'
+  progress: number // 0-100
+  lastOutput: string
+  startedAt: string
+  completedAt: string | null
+  taskId: string | null
+  telegramNotified: boolean
+}
+
+export interface ClaudeCodeStatus {
+  running: boolean
+  pid: number | null
+  goal: string | null
+  progress: number
+  lastOutput: string
+  elapsedSeconds: number
+  projectPath?: string
 }

@@ -40,6 +40,10 @@ interface ClientState {
     notes?: string
   }) => Promise<void>
   deletePayment: (id: string) => Promise<void>
+  updatePayment: (
+    id: string,
+    paymentData: Partial<Omit<Payment, 'id' | 'createdAt'>>
+  ) => Promise<void>
 }
 
 export const useClientStore = create<ClientState>((set, get) => ({
@@ -218,6 +222,34 @@ export const useClientStore = create<ClientState>((set, get) => ({
       }
     } catch (error: any) {
       set({ error: error.message || 'An unexpected error occurred', isLoading: false })
+    }
+  },
+
+  updatePayment: async (id, paymentData) => {
+    set({ isLoading: true, error: null })
+    try {
+      const apiData: any = { ...paymentData }
+      if (paymentData.date instanceof Date) {
+        apiData.date = paymentData.date.toISOString()
+      }
+      const response = await window.api.updatePayment(id, apiData)
+      if (response.success && response.data) {
+        // Refresh the client list to update balances
+        await get().fetchClientsWithBalances()
+        // Refresh current client's ledger and payments if viewing
+        const currentClientId = get().currentClient?.id
+        if (currentClientId) {
+          await get().fetchClientLedger(currentClientId)
+          await get().fetchPaymentsByClient(currentClientId)
+        }
+        set({ isLoading: false })
+      } else {
+        set({ error: response.error || 'Failed to update payment', isLoading: false })
+        throw new Error(response.error || 'Failed to update payment')
+      }
+    } catch (error: any) {
+      set({ error: error.message || 'An unexpected error occurred', isLoading: false })
+      throw error
     }
   }
 }))

@@ -121,37 +121,42 @@ const ProjectsPage: React.FC = () => {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Projects</h1>
-        <CreateProjectModal
-          onSubmit={handleProjectSubmit}
-          open={isCreateModalOpen}
-          onOpenChange={setIsCreateModalOpen}
+        <div className="flex items-center gap-2">
+          <CreateProjectModal
+            onSubmit={handleProjectSubmit}
+            open={isCreateModalOpen}
+            onOpenChange={setIsCreateModalOpen}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {/* Status filter chips */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {filterChips.map((chip) => (
+            <button
+              key={chip.id}
+              onClick={() => setFilter(chip.id)}
+              className={
+                'px-3 py-1.5 text-sm rounded-full border transition-colors ' +
+                (filter === chip.id
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-transparent text-muted-foreground border-border hover:text-foreground')
+              }
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+
+        <ProjectList
+          projects={visibleProjects}
+          onSelectProject={handleSelectProject}
+          onEditProject={handleOpenEditModal}
+          onDeleteProject={handleDeleteProject}
+          onCreateProject={() => setIsCreateModalOpen(true)}
         />
       </div>
-
-      {/* Status filter chips */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {filterChips.map((chip) => (
-          <button
-            key={chip.id}
-            onClick={() => setFilter(chip.id)}
-            className={
-              'px-3 py-1.5 text-sm rounded-full border transition-colors ' +
-              (filter === chip.id
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'bg-transparent text-muted-foreground border-border hover:text-foreground')
-            }
-          >
-            {chip.label}
-          </button>
-        ))}
-      </div>
-
-      <ProjectList
-        projects={visibleProjects}
-        onSelectProject={handleSelectProject}
-        onEditProject={handleOpenEditModal}
-        onDeleteProject={handleDeleteProject}
-      />
 
       {/* Edit Project Modal - Controlled by page state */}
       <Dialog
@@ -161,6 +166,7 @@ const ProjectsPage: React.FC = () => {
         onOpenChange={(open) => {
           if (!open) handleCloseEditModal()
         }}
+        size="wide"
       >
         {editingProject && (
           <EditProjectForm

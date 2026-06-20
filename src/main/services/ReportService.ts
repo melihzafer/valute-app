@@ -5,23 +5,8 @@
 import { eq, and, gte, lte } from 'drizzle-orm'
 import { getDb } from '../db/index'
 import { projects, logs } from '../db/schema'
+import { calculateLogEarnings } from '../../shared/earnings'
 import type { TimeReport, TimeReportRow } from '../../shared/types'
-
-// Earnings for a single log (cents), matching DashboardService semantics.
-function calculateLogEarnings(
-  duration: number | null,
-  quantity: number | null,
-  hourlyRate: number | null,
-  projectType: string
-): number {
-  if (!hourlyRate) return 0
-  if (projectType === 'UNIT_BASED' && quantity) {
-    return Math.round(quantity * hourlyRate)
-  } else if (duration) {
-    return Math.round((duration / 3600) * hourlyRate)
-  }
-  return 0
-}
 
 /**
  * Build a time report between two dates (inclusive), grouped by project.
